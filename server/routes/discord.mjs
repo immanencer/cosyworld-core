@@ -1,48 +1,11 @@
 import express from 'express';
-import { Client, GatewayIntentBits } from 'discord.js';
 import { ObjectId } from 'mongodb';
-import process from 'process';
 import { db } from '../../database.mjs';
-import chunkText from '../util/chunk-text.mjs';
+import { sendMessage, sendAsAvatar, getLocations, isDiscordReady } from './discord-module.mjs';
 
 const router = express.Router();
 const REQUESTS_COLLECTION = 'requests';
 const MESSAGES_COLLECTION = 'messages';
-
-// Discord Client Setup
-const discordClient = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent,
-    ]
-});
-
-let discordReady = false;
-
-async function initializeDiscordClient() {
-    try {
-        await discordClient.login(process.env.DISCORD_BOT_TOKEN);
-        console.log('🎮 Bot logged in');
-        discordReady = true;
-    } catch (error) {
-        console.error('🎮 ❌ Discord login error:', error);
-        discordReady = false;
-        throw error;
-    }
-}
-
-// Initialize database and Discord client
-async function initialize() {
-    try {
-        await initializeDiscordClient();
-    } catch (error) {
-        console.error('❌ Initialization error:', error);
-        process.exit(1);
-    }
-}
-
-await initialize();
 
 // Middleware
 router.use(express.json());
@@ -115,39 +78,13 @@ router.get('/messages/mention', async (req, res) => {
 });
 
 router.get('/locations', async (req, res) => {
-    if (!discordReady) {
+    if (!isDiscordReady()) {
         return res.status(503).send({ error: 'Discord client not ready' });
     }
 
     try {
-        const channels = discordClient.channels.cache;
-        const channelTypes = {
-            ThreadChannel: "thread",
-            TextChannel: "channel",
-            CategoryChannel: "category",
-            VoiceChannel: "voice"
-        };
-
-        const categorizedChannels = channels.reduce((acc, channel) => {
-            const channelType = channel.constructor.name;
-            if (!acc[channelType]) acc[channelType] = [];
-            acc[channelType].push({
-                id: channel.id,
-                name: channel.name,
-                type: channelTypes[channelType] || 'unknown',
-                channel_type: channelType,
-                parent: channel.parentId || null
-            });
-            return acc;
-        }, {});
-
-        const orderedChannels = [
-            ...(categorizedChannels.CategoryChannel || []),
-            ...(categorizedChannels.TextChannel || []),
-            ...(categorizedChannels.ThreadChannel || [])
-        ];
-
-        res.status(200).send(orderedChannels);
+        const locations = await getLocations();
+        res.status(200).send(locations);
     } catch (error) {
         console.error('🎮 ❌ Failed to fetch locations:', error);
         res.status(500).send({ error: 'Failed to fetch locations' });
@@ -167,10 +104,10 @@ router.post('/enqueue', async (req, res) => {
 });
 
 router.get('/process', async (req, res) => {
-    if (!db){
+    if (!db) {
         return res.status(503).send({ error: 'Database service unavailable' });
     }
-    if ( !discordReady) {
+    if (!isDiscordReady()) {
         return res.status(503).send({ error: 'Discord client not ready' });
     }
 
@@ -198,7 +135,7 @@ router.get('/process', async (req, res) => {
 });
 
 async function processRequest(action, data) {
-    if (!discordReady || !db) {
+    if (!isDiscordReady() || !db) {
         throw new Error('Services not ready');
     }
 
@@ -220,64 +157,15 @@ async function processRequest(action, data) {
     await selectedAction();
 }
 
-async function sendMessage(channelId, message, threadId = null) {
-    const channel = await discordClient.channels.fetch(channelId);
-    if (!channel.isTextBased()) {
-        throw new Error('Invalid channel');
-    }
-    await channel.send({ content: message, threadId });
-}
-
-async function sendAsAvatar(avatar, message) {
-    console.log('🎮 Sending as avatar:', avatar.name, message);
-    let channel = await discordClient.channels.fetch(avatar.channelId);
-    
-    if (channel.type === 'GUILD_CATEGORY') {
-        channel = await discordClient.channels.fetch(avatar.location.id);
-        delete avatar.threadId;
-    }
-
-    if (!channel) {
-        throw new Error(`Invalid channel: ${avatar.channelId}`);
-    }
-
-    const webhook = await getOrCreateWebhook(channel);
-    const chunks = chunkText(message, 2000);
-
-    for (const chunk of chunks) {
-        await webhook.send({
-            content: chunk,
-            username: avatar.name,
-            avatarURL: avatar.avatar,
-            threadId: avatar.threadId
-        });
-    }
-}
-
-async function getOrCreateWebhook(channel) {
-    const webhooks = await channel.fetchWebhooks();
-    let webhook = webhooks.find(wh => wh.owner.id === discordClient.user.id);
-    
-    if (!webhook) {
-        webhook = await channel.createWebhook({
-            name: 'Bot Webhook',
-            avatar: 'https://i.imgur.com/jqNRvED.png'
-        });
-    }
-    
-    return webhook;
-}
-
 // Periodic processing
 setInterval(async () => {
-
-    if (!discordReady || !db) {
+    if (!isDiscordReady() || !db) {
         console.log('🎮 Services not ready');
         return;
     }
 
     try {
-        const response = await fetch('http://localhost:3000/discord-bot/process');
+        const response = await fetch('http://localhost:3000/discord/process');
         const data = await response.json();
         if (data.message !== "No queued requests") {
             console.log('🎮 Processing:', data);
