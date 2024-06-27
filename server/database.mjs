@@ -13,7 +13,7 @@ async function connectToDB() {
     }
 
     try {
-        if (!client || !client.isConnected()) {
+        if (!client || !client.topology || !client.topology.isConnected()) {
             client = new MongoClient(MONGO_URI, {
                 ssl: true,
                 tls: true,
