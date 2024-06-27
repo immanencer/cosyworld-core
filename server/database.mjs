@@ -1,6 +1,6 @@
 import { MongoClient } from 'mongodb';
 
-const MONGO_URI = 'mongodb://localhost:27017'; // Update with your MongoDB URI
+const MONGO_URI = process.env.MONGODB_CONNECTION_STRING || 'mongodb://localhost:27017';
 const DB_NAME = 'cosyworld';
 
 let db;
