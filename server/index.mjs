@@ -10,9 +10,6 @@ app.use(express.json());
 import ai from './routes/ai.mjs';
 app.use('/ai', ai);
 
-import config from './routes/config.mjs';
-app.use('/config',config);
-
 // Custom API routes
 
 import avatars from './routes/avatars.mjs';

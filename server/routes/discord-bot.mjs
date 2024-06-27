@@ -44,7 +44,7 @@ async function initialize() {
     }
 }
 
-initialize();
+await initialize();
 
 // Middleware
 router.use(express.json());
