@@ -34,7 +34,7 @@ export default class ReplicateService {
                 temperature: 0.6,
                 system_prompt: systemPrompt,
                 length_penalty: 1,
-                stop_sequences: [","],
+                stop_sequences: ",",
                 prompt_template: `system\n\nYou are a helpful assistant\n\nuser\n\n{prompt}\n\nassistant\n\n`,
                 presence_penalty: 1.15,
                 log_performance_metrics: false
