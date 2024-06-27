@@ -2,8 +2,8 @@ import { Client, GatewayIntentBits } from 'discord.js';
 
 import db from '../database/index.js';
 
-import OllamaService from '../ai-services/ollama.js';
-const ai = new OllamaService();
+import ReplicateService from './ai/replicate-service.mjs';
+const ai = new ReplicateService();
 
 const collectionName = 'messages';
 

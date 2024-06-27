@@ -1,5 +1,4 @@
-import OpenAIService from './ai/openai-service.mjs';
-import OllamaService from './ai/ollama-service.mjs';   
+import ReplicateService from './ai/replicate-service.mjs';
 
 class AI {
     constructor(model) {
@@ -10,17 +9,18 @@ class AI {
     initializeService() {
         switch (this.model) {
             case 'openai/gpt-3.5-turbo':
-                this.service = new OpenAIService();
-                break;
+                //this.service = new OpenAIService();
+                //break;
             case 'ollama':
             case 'ollama/llama3':
-                this.service = new OllamaService();
-                break;
+                //this.service = new OllamaService();
+                //break;
             case 'qwen2':
             case 'ollama/qwen2':
-                this.service = new OllamaService('qwen2');
-                break;
+                //this.service = new OllamaService('qwen2');
+                //break;
             default:
+                this.service = new ReplicateService('meta-llama-3-70b-instruct');
                 throw new Error(`Unknown model: ${this.model}`);
         }
     }
