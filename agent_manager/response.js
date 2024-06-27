@@ -72,7 +72,7 @@ async function checkShouldRespond(avatar, conversation) {
             `}]
     );
 
-    console.log(`Haiku check for ${avatar.name}: ${haikuCheck}`);
+    console.log(`Haiku check for ${avatar.name}: ${JSON.stringify(haikuCheck, null, 2)}`);
 
     const shouldRespond = haikuCheck && haikuCheck.toLowerCase().includes('yes');
     console.log(`Haiku check for ${avatar.name}: ${shouldRespond ? 'Passed' : 'Failed'}`);
