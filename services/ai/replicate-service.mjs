@@ -7,22 +7,6 @@ export default class ReplicateService {
     }
 
     async chat({ systemPrompt, messages }) {
-        const modelfile = `FROM ${this.model}\nSYSTEM "${systemPrompt}"`;
-
-        const modelHash = this.generateHash(modelfile);
-
-        if (!model_cache[modelHash]) {
-            try {
-                model_cache[modelHash] = true;
-                console.log('🦙 Model initialized:', modelHash);
-            } catch (error) {
-                console.error('💀 🦙 Failed to initialize model:', error);
-                throw error;
-            }
-        } else {
-            console.log('🦙 Model exists:', modelHash);
-        }
-
         const userMessages = messages.map(msg => msg.content).join(' ');
         const requestBody = {
             input: {
@@ -40,6 +24,8 @@ export default class ReplicateService {
                 log_performance_metrics: false
               }
         };
+
+        console.log('🦙 Requesting response from Replicate:', JSON.stringify(requestBody, null, 2));
 
         const response = await fetch('https://api.replicate.com/v1/models/meta/meta-llama-3-70b-instruct/predictions', {
             method: 'POST',
@@ -59,16 +45,11 @@ export default class ReplicateService {
         const result = await response.json();
 
         if (!result || !result.output) {
+            console
             console.error('🦙 Empty response from Replicate');
             throw new Error('Empty response from Replicate');
         }
 
         return result.output;
-    }
-
-    generateHash(input) {
-        return input.split('').reduce((acc, char) => {
-            return acc + char.charCodeAt(0);
-        }, 0).toString();
     }
 }
