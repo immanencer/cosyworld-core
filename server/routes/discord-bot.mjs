@@ -168,8 +168,11 @@ router.post('/enqueue', async (req, res) => {
 });
 
 router.get('/process', async (req, res) => {
-    if (!db || !discordReady) {
-        return res.status(503).send({ error: 'Service unavailable' });
+    if (!db){
+        return res.status(503).send({ error: 'Database service unavailable' });
+    }
+    if ( !discordReady) {
+        return res.status(503).send({ error: 'Discord client not ready' });
     }
 
     try {
