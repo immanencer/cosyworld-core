@@ -5,10 +5,10 @@ import { handleResponse } from "./response.js";
 
 const lastProcessedMessageIdByAvatar = new Map();
 
-export const getMessages = (location, since) => 
+export const getMessages = (location, since) =>
     fetchJSON(createURLWithParams(MESSAGES_API, { location, since }));
 
-export const getMentions = (name, since) => 
+export const getMentions = (name, since) =>
     fetchJSON(createURLWithParams(`${MESSAGES_API}/mention`, { name, since }));
 
 export async function processMessagesForAvatar(avatar) {
@@ -24,7 +24,7 @@ export async function processMessagesForAvatar(avatar) {
         }
 
         await handleAvatarLocation(avatar, mentions, locations);
-        
+
         const messages = await fetchMessages(avatar, locations);
         const conversation = buildConversation(avatar, messages, locations);
 
@@ -48,9 +48,15 @@ async function handleAvatarLocation(avatar, mentions, locations) {
         avatar.location = locations[0];
     }
 
-    if (!avatar.location.id)  {
-        console.error(`Invalid location for ${avatar.name}: ${JSON.stringify(avatar.location)}`);
-        return;
+    if (!avatar.location.id) {
+        if (avatar.location.channelId) {
+            avatar.location.id = avatar.location.channelId;
+        } else if (avatar.location.threadId) {
+            avatar.location.id = avatar.location.threadId;
+        } else {
+            console.error(`Invalid location for ${avatar.name}: ${JSON.stringify(avatar.location)}`);
+            return;
+        }
     }
 
     if (mentions.length > 0 && avatar.summon === "true") {
@@ -69,7 +75,7 @@ async function handleAvatarLocation(avatar, mentions, locations) {
     }
 }
 
-const shouldMoveAvatar = (avatar, lastMention) => 
+const shouldMoveAvatar = (avatar, lastMention) =>
     avatar.location.id !== lastMention.channelId &&
     avatar.location.id !== lastMention.threadId &&
     (avatar.owner === 'host' || avatar.owner === lastMention.author);
@@ -95,7 +101,7 @@ const buildConversation = (avatar, messages, locations) =>
         const author = message.author.displayName || message.author.username;
         const location = locations.find(loc => loc.id === message.channelId)?.name || 'unknown location';
         const isBot = message.author.discriminator === "0000";
-        
+
         return author.includes(avatar.name)
             ? { bot: isBot, role: 'assistant', content: message.content }
             : { bot: isBot, role: 'user', content: `(${location}) ${author}: ${message.content}` };
@@ -103,8 +109,8 @@ const buildConversation = (avatar, messages, locations) =>
 
 const shouldRespond = (conversation) => {
     const recentMessages = conversation.slice(-5);
-    return recentMessages.some(message => !message.bot) && 
-           conversation[conversation.length - 1]?.role === 'user';
+    return recentMessages.some(message => !message.bot) &&
+        conversation[conversation.length - 1]?.role === 'user';
 };
 
 const updateLastProcessedMessageId = (avatar, mentions) => {
