@@ -1,5 +1,3 @@
-import fetch from 'node-fetch'; // Make sure you have node-fetch installed
-
 const model_cache = {};
 
 export default class ReplicateService {
