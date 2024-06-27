@@ -1,7 +1,7 @@
 import express from 'express';
 import { ObjectId } from 'mongodb';
 import { db } from '../../database.mjs';
-import { sendMessage, sendAsAvatar, getLocations, isDiscordReady } from './discord-module.mjs';
+import { sendMessage, sendAsAvatar, getLocations, isDiscordReady } from './discord.mjs';
 
 const router = express.Router();
 const REQUESTS_COLLECTION = 'requests';
