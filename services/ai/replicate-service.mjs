@@ -25,8 +25,6 @@ export default class ReplicateService {
             }
         };
 
-        console.log('🦙 Requesting response from Replicate:', JSON.stringify(requestBody, null, 2));
-
         const response = await fetch('https://api.replicate.com/v1/models/meta/meta-llama-3-70b-instruct/predictions', {
             method: 'POST',
             headers: {
@@ -41,10 +39,9 @@ export default class ReplicateService {
             console.error('🦙 Failed to get response from Replicate:', errorText);
             throw new Error('Failed to get response from Replicate');
         }
-
-        const result = await response.json();
-
         const prediction = await response.json();
+
+        console.log('🦙 Prediction:', JSON.stringify(prediction, null, 2));
         return this.pollPredictionResult(prediction.id);
     }
 
