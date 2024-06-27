@@ -1,6 +1,6 @@
 import express from 'express';
 import { ObjectId } from 'mongodb';
-import { db } from '../database.mjs';
+import { db } from '../../database.mjs';
 import { isDiscordReady, sendMessage, getLocations } from './discord-module.mjs';
 
 const router = express.Router();
