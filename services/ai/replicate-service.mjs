@@ -28,17 +28,17 @@ export default class ReplicateService {
             input: {
                 top_k: 0,
                 top_p: 0.9,
-                prompt: `Work through this problem step by step:\n\nQ: ${userMessages}`,
+                prompt: userMessages,
                 max_tokens: 512,
                 min_tokens: 0,
                 temperature: 0.6,
                 system_prompt: systemPrompt,
                 length_penalty: 1,
-                stop_sequences: ",",
-                prompt_template: `system\n\nYou are a helpful assistant\n\nuser\n\n{prompt}\n\nassistant\n\n`,
+                stop_sequences: "<|end_of_text|>,<|eot_id|>",
+                prompt_template: "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n" + systemPrompt + "<|eot_id|><|start_header_id|>user<|end_header_id|>\n\n{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n",
                 presence_penalty: 1.15,
                 log_performance_metrics: false
-            }
+              }
         };
 
         const response = await fetch('https://api.replicate.com/v1/models/meta/meta-llama-3-70b-instruct/predictions', {
