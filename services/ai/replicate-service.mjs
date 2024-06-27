@@ -61,6 +61,6 @@ export default class ReplicateService {
             await new Promise(resolve => setTimeout(resolve, 1000)); // Poll every second
         } while (status === 'starting' || status === 'processing');
 
-        return { response: result.output.join('') };
+        return result.output.join('');
     }
 }
