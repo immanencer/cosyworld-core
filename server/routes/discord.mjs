@@ -1,10 +1,9 @@
 import express from 'express';
 import { ObjectId } from 'mongodb';
-import { db } from '../../database.mjs';
-import { sendMessage, sendAsAvatar, getLocations, isDiscordReady } from '../../services/discord.mjs';
+import { db } from '../database.mjs';
+import { isDiscordReady, sendMessage, getLocations } from './discord-module.mjs';
 
 const router = express.Router();
-const REQUESTS_COLLECTION = 'requests';
 const MESSAGES_COLLECTION = 'messages';
 
 // Middleware
@@ -32,30 +31,6 @@ router.get('/messages', async (req, res) => {
         res.status(200).send(messages);
     } catch (error) {
         handleDatabaseError(res, error, 'fetch messages');
-    }
-});
-
-router.post('/messages', async (req, res) => {
-    const { id, author, content, createdAt, channelId, guildId } = req.body;
-    const message = {
-        message_id: id || 'default_id',
-        author: {
-            id: author?.id || 'default_author_id',
-            username: author?.displayName || 'default_username',
-            discriminator: author?.discriminator || '0000',
-            avatar: author?.avatar || 'default_avatar_url'
-        },
-        content: content || 'default_content',
-        createdAt: createdAt || new Date().toISOString(),
-        channelId: channelId || 'default_channel_id',
-        guildId: guildId || 'default_guild_id'
-    };
-
-    try {
-        await db.collection(MESSAGES_COLLECTION).insertOne(message);
-        res.status(201).send({ message: 'Message logged' });
-    } catch (error) {
-        handleDatabaseError(res, error, 'log message');
     }
 });
 
@@ -91,88 +66,20 @@ router.get('/locations', async (req, res) => {
     }
 });
 
-router.post('/enqueue', async (req, res) => {
-    const { action, data } = req.body;
-    const request = { action, data, status: 'queued', createdAt: new Date() };
-
-    try {
-        await db.collection(REQUESTS_COLLECTION).insertOne(request);
-        res.status(200).send({ message: 'Request enqueued' });
-    } catch (error) {
-        handleDatabaseError(res, error, 'enqueue request');
-    }
-});
-
-router.get('/process', async (req, res) => {
-    if (!db) {
-        return res.status(503).send({ error: 'Database service unavailable' });
-    }
+router.post('/send-message', async (req, res) => {
     if (!isDiscordReady()) {
         return res.status(503).send({ error: 'Discord client not ready' });
     }
 
+    const { channelId, message, threadId } = req.body;
+
     try {
-        const request = await db.collection(REQUESTS_COLLECTION).findOneAndUpdate(
-            { status: 'queued' },
-            { $set: { status: 'processing', startedAt: new Date() } },
-            { sort: { createdAt: 1 }, returnDocument: 'after' }
-        );
-
-        if (!request?.action) {
-            return res.status(200).send({ message: 'No queued requests' });
-        }
-
-        await processRequest(request.action, request.data);
-        await db.collection(REQUESTS_COLLECTION).updateOne(
-            { _id: request._id },
-            { $set: { status: 'completed', completedAt: new Date() } }
-        );
-
-        res.status(200).send({ message: 'Request processed' });
+        await sendMessage(channelId, message, threadId);
+        res.status(200).send({ message: 'Message sent successfully' });
     } catch (error) {
-        handleDatabaseError(res, error, 'process request');
+        console.error('🎮 ❌ Failed to send message:', error);
+        res.status(500).send({ error: 'Failed to send message' });
     }
 });
-
-async function processRequest(action, data) {
-    if (!isDiscordReady() || !db) {
-        throw new Error('Services not ready');
-    }
-
-    const actions = {
-        sendMessage: () => sendMessage(data.channelId, data.message, data.threadId),
-        sendAsAvatar: () => {
-            if (!data.avatar || !data.message) {
-                throw new Error('Missing avatar data or message');
-            }
-            return sendAsAvatar(data.avatar, data.message);
-        }
-    };
-
-    const selectedAction = actions[action];
-    if (!selectedAction) {
-        throw new Error(`Unknown action: ${action}`);
-    }
-
-    await selectedAction();
-}
-
-// Periodic processing
-setInterval(async () => {
-    if (!isDiscordReady() || !db) {
-        console.log('🎮 Services not ready');
-        return;
-    }
-
-    try {
-        const response = await fetch('http://localhost:3000/discord/process');
-        const data = await response.json();
-        if (data.message !== "No queued requests") {
-            console.log('🎮 Processing:', data);
-        }
-    } catch (error) {
-        console.error('🎮 ❌ Failed to process:', error);
-    }
-}, process.env.PROCESS_INTERVAL || 5000);
 
 export default router;
