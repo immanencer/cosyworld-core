@@ -22,7 +22,7 @@ export default class ReplicateService {
                 prompt_template: "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n" + systemPrompt + "<|eot_id|><|start_header_id|>user<|end_header_id|>\n\n{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n",
                 presence_penalty: 1.15,
                 log_performance_metrics: false
-              }
+            }
         };
 
         console.log('🦙 Requesting response from Replicate:', JSON.stringify(requestBody, null, 2));
@@ -44,14 +44,30 @@ export default class ReplicateService {
 
         const result = await response.json();
 
-        console.log('🦙 Response from Replicate:', JSON.stringify(result, null, 2)) ;
+        const prediction = await response.json();
+        return this.pollPredictionResult(prediction.id);
+    }
 
-        if (!result || !result.output) {
-            console
-            console.error('🦙 Empty response from Replicate');
-            throw new Error('Empty response from Replicate');
-        }
+    async pollPredictionResult(predictionId) {
+        let status = 'starting';
+        let result;
+        do {
+            const pollResponse = await fetch(`https://api.replicate.com/v1/predictions/${predictionId}`, {
+                headers: {
+                    'Authorization': `Bearer ${this.apiToken}`
+                }
+            });
+            result = await pollResponse.json();
+            status = result.status;
+            if (status === 'failed' || status === 'canceled') {
+                console.error('🦙 Prediction failed or was canceled:', result.error);
+                throw new Error('Prediction failed or was canceled');
+            }
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Poll every second
+        } while (status === 'starting' || status === 'processing');
 
+        console.log('🦙 Response from Replicate:', JSON.stringify(result, null, 2));
         return result.output;
+
     }
 }
