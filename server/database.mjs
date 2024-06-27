@@ -18,8 +18,6 @@ async function connectToDB() {
                 ssl: true,
                 tls: true,
                 tlsAllowInvalidCertificates: false,
-                useNewUrlParser: true,
-                useUnifiedTopology: true,
                 serverSelectionTimeoutMS: 5000 // Timeout after 5 seconds if no server is found
             });
             await client.connect();
