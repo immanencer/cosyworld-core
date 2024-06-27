@@ -35,7 +35,6 @@ async function initializeDiscordClient() {
 // Initialize database and Discord client
 async function initialize() {
     try {
-        await connectToDB();
         await initializeDiscordClient();
     } catch (error) {
         console.error('❌ Initialization error:', error);

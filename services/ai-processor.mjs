@@ -1,6 +1,5 @@
-import { connectToDB } from '../database.mjs';
+import { db } from '../database.mjs';
 
-const db = await connectToDB();
 const collection = db.collection('tasks');
 
 import AI from './ai.mjs';
