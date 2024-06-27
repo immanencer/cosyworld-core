@@ -40,8 +40,6 @@ export default class ReplicateService {
             throw new Error('Failed to get response from Replicate');
         }
         const prediction = await response.json();
-
-        console.log('🦙 Prediction:', JSON.stringify(prediction, null, 2));
         return this.pollPredictionResult(prediction.id);
     }
 
@@ -63,8 +61,6 @@ export default class ReplicateService {
             await new Promise(resolve => setTimeout(resolve, 1000)); // Poll every second
         } while (status === 'starting' || status === 'processing');
 
-        console.log('🦙 Response from Replicate:', JSON.stringify(result, null, 2));
-        return result.output;
-
+        return result.output.join('');
     }
 }
