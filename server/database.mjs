@@ -7,7 +7,13 @@ let db;
 
 async function connectToDB() {
     try {
-        const client = new MongoClient(MONGO_URI);
+        const client = new MongoClient(MONGO_URI, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true,
+            ssl: true,
+            tls: true,
+            tlsAllowInvalidCertificates: false
+        });
         await client.connect();
         db = client.db(DB_NAME);
         console.log('🎉 Connected to MongoDB');
