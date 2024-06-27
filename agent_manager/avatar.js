@@ -1,11 +1,17 @@
 import { AVATARS_API, LOCATIONS_API } from './config.js';
 import { fetchJSON } from './utils.js';
 
+let lastCacheTime = null;
 let cachedLocations = null;
 
 export const getLocations = async () => {
-    if (!cachedLocations) {
+
+    if (lastCacheTime && Date.now() - lastCacheTime < 5000) {
+        return cachedLocations;
+    }
+    if (!cachedLocations || cachedLocations.length === 0) {
         cachedLocations = await fetchJSON(LOCATIONS_API);
+        lastCacheTime = Date.now();
     }
     return cachedLocations;
 };
