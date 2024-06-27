@@ -1,8 +1,6 @@
-import { MongoClient } from 'mongodb';
+import { connectToDB } from '../server/database.mjs';
+const db = await connectToDB();
 
-
-const client = new MongoClient('mongodb://localhost:27017');
-const db = client.db('cosyworld');
 const collection = db.collection('tasks');
 
 import AI from './ai.mjs';
