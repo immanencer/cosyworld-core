@@ -1,5 +1,5 @@
 import { Client, GatewayIntentBits } from 'discord.js';
-import chunkText from '../util/chunk-text.mjs';
+import chunkText from '../utils/chunkText.mjs';
 
 const discordClient = new Client({
     intents: [
