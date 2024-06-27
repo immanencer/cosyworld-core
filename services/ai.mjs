@@ -19,9 +19,12 @@ class AI {
             case 'ollama/qwen2':
                 //this.service = new OllamaService('qwen2');
                 //break;
-            default:
+            case 'replicate/meta-llama-3-70b-instruct':
                 this.service = new ReplicateService('meta-llama-3-70b-instruct');
-                throw new Error(`Unknown model: ${this.model}`);
+                break;
+            default:
+                throw new Error('Invalid model');
+
         }
     }
 
