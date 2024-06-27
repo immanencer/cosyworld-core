@@ -1,10 +1,11 @@
 import express from 'express';
 import { ObjectId } from 'mongodb';
 import { db } from '../../database.mjs';
-import { isDiscordReady, sendMessage, getLocations } from '../../services/discord.mjs';
+import { isDiscordReady, sendMessage } from '../../services/discord.mjs';
 
 const router = express.Router();
 const MESSAGES_COLLECTION = 'messages';
+const LOCATIONS_COLLECTION = 'locations';
 
 // Middleware
 router.use(express.json());
@@ -21,7 +22,6 @@ router.get('/messages', async (req, res) => {
     const query = {};
     if (since) query._id = { $gt: new ObjectId(since) };
     if (location) query.channelId = location;
-
     try {
         const messages = await db.collection(MESSAGES_COLLECTION)
             .find(query)
@@ -39,7 +39,6 @@ router.get('/messages/mention', async (req, res) => {
     const query = {};
     if (since) query._id = { $gt: new ObjectId(since) };
     if (name) query.content = { $regex: new RegExp('\\b' + name + '\\b', 'i') };
-
     try {
         const messages = await db.collection(MESSAGES_COLLECTION)
             .find(query)
@@ -53,16 +52,13 @@ router.get('/messages/mention', async (req, res) => {
 });
 
 router.get('/locations', async (req, res) => {
-    if (!isDiscordReady()) {
-        return res.status(503).send({ error: 'Discord client not ready' });
-    }
-
     try {
-        const locations = await getLocations();
+        const locations = await db.collection(LOCATIONS_COLLECTION)
+            .find({})
+            .toArray();
         res.status(200).send(locations);
     } catch (error) {
-        console.error('🎮 ❌ Failed to fetch locations:', error);
-        res.status(500).send({ error: 'Failed to fetch locations' });
+        handleDatabaseError(res, error, 'fetch locations');
     }
 });
 
@@ -70,9 +66,7 @@ router.post('/send-message', async (req, res) => {
     if (!isDiscordReady()) {
         return res.status(503).send({ error: 'Discord client not ready' });
     }
-
     const { channelId, message, threadId } = req.body;
-
     try {
         await sendMessage(channelId, message, threadId);
         res.status(200).send({ message: 'Message sent successfully' });
