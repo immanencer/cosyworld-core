@@ -9,11 +9,9 @@ async function connectToDB() {
         console.warn('🚪 Already connected to MongoDB');
         return db;
     }
-    
+
     try {
         const client = new MongoClient(MONGO_URI, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
             ssl: true,
             tls: true,
             tlsAllowInvalidCertificates: false
