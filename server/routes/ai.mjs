@@ -1,7 +1,9 @@
 import express from 'express';
 import bodyParser from 'body-parser';
 import { ObjectId } from 'mongodb';
-import { db } from '../database.mjs';
+import { connectToDB() } from '../database.mjs';
+
+const db = connectToDB();
 
 const router = express.Router();
 const TASKS_COLLECTION = 'tasks';

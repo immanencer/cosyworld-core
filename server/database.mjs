@@ -4,8 +4,12 @@ const MONGO_URI = process.env.MONGODB_CONNECTION_STRING || 'mongodb://localhost:
 const DB_NAME = 'cosyworld';
 
 let db;
-
 async function connectToDB() {
+    if (db) {
+        console.warn('🚪 Already connected to MongoDB');
+        return db;
+    }
+    
     try {
         const client = new MongoClient(MONGO_URI, {
             useNewUrlParser: true,
@@ -17,10 +21,11 @@ async function connectToDB() {
         await client.connect();
         db = client.db(DB_NAME);
         console.log('🎉 Connected to MongoDB');
+        return db;
     } catch (error) {
         console.error('❌ MongoDB connection error:', error);
         throw error;
     }
 }
 
-export { db, connectToDB };
+export { connectToDB };
