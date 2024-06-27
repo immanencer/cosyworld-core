@@ -1,6 +1,6 @@
 import { connectToDB } from '../server/database.mjs';
-const db = await connectToDB();
 
+const db = await connectToDB();
 const collection = db.collection('tasks');
 
 import AI from './ai.mjs';
@@ -50,9 +50,6 @@ async function process_next_task() {
 
 
 let running = true;
-await client.connect();
 while (running) {
     await process_next_task();
 }
-// close the connection
-await client.close();
