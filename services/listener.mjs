@@ -1,6 +1,7 @@
 import { Client, GatewayIntentBits } from 'discord.js';
 
-import db from '../database/index.js';
+import { connectToDB } from './database.mjs';
+const db = await connectToDB();
 
 import ReplicateService from './ai/replicate-service.mjs';
 const ai = new ReplicateService();
