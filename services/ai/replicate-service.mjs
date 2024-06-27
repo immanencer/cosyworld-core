@@ -7,7 +7,7 @@ export default class ReplicateService {
     }
 
     async chat({ systemPrompt, messages }) {
-        const userMessages = messages.map(msg => msg.content).join(' ');
+        const userMessages = messages.map(msg => msg.content).join('\n');
         const requestBody = {
             input: {
                 top_k: 0,
@@ -43,6 +43,8 @@ export default class ReplicateService {
         }
 
         const result = await response.json();
+
+        console.log('🦙 Response from Replicate:', JSON.stringify(result, null, 2)) ;
 
         if (!result || !result.output) {
             console
