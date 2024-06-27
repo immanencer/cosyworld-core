@@ -3,7 +3,7 @@ import bodyParser from 'body-parser';
 import { ObjectId } from 'mongodb';
 import { connectToDB } from '../database.mjs';
 
-const db = connectToDB();
+const db = await connectToDB();
 
 const router = express.Router();
 const TASKS_COLLECTION = 'tasks';

@@ -3,7 +3,7 @@ import { Client, GatewayIntentBits } from 'discord.js';
 import { ObjectId } from 'mongodb';
 import process from 'process';
 import { connectToDB } from '../database.mjs';
-const db = connectToDB();
+const db = await connectToDB();
 import chunkText from '../util/chunk-text.mjs';
 
 const router = express.Router();
