@@ -49,8 +49,8 @@ async function handleAvatarLocation(avatar, mentions, locations) {
     }
 
     if (!avatar.location.id)  {
-            console.error(`Invalid location for ${avatar.name}`);
-            return;
+        console.error(`Invalid location for ${avatar.name}: ${JSON.stringify(avatar.location)}`);
+        return;
     }
 
     if (mentions.length > 0 && avatar.summon === "true") {
