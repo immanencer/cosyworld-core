@@ -272,6 +272,12 @@ async function getOrCreateWebhook(channel) {
 
 // Periodic processing
 setInterval(async () => {
+
+    if (!discordReady || !db) {
+        console.log('🎮 Services not ready');
+        return;
+    }
+
     try {
         const response = await fetch('http://localhost:3000/discord-bot/process');
         const data = await response.json();
@@ -281,6 +287,6 @@ setInterval(async () => {
     } catch (error) {
         console.error('🎮 ❌ Failed to process:', error);
     }
-}, 3000);
+}, process.env.PROCESS_INTERVAL || 5000);
 
 export default router;
