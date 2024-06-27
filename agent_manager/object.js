@@ -1,4 +1,4 @@
-import { db } from './database.js';
+import { db } from '../database.mjs';
 import { cleanString } from './utils.js';
 import { waitForTask } from './task.js';
 import { postResponse } from './response.js';

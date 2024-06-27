@@ -1,4 +1,4 @@
-import { connectToDB } from '../server/database.mjs';
+import { connectToDB } from '../database.mjs';
 
 const db = await connectToDB();
 const collection = db.collection('tasks');

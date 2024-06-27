@@ -1,17 +1,12 @@
 import express from 'express';
-import { MongoClient } from 'mongodb';
-
 const router = express.Router();
-const mongoUri = 'mongodb://localhost:27017';
-const dbName = 'cosyworld';
+
+import { db } from '../../database.mjs';
 
 router.get('/map', async (req, res) => {
   const client = new MongoClient(mongoUri);
 
   try {
-    await client.connect();
-    const db = client.db(dbName);
-
     // Get all avatars and objects
     const avatars = await db.collection('avatars').find().toArray();
     const objects = await db.collection('objects').find().toArray();
@@ -37,8 +32,6 @@ router.get('/map', async (req, res) => {
   } catch (error) {
     console.error('Database error:', error);
     res.status(500).json({ error: 'Internal server error' });
-  } finally {
-    await client.close();
   }
 });
 

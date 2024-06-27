@@ -2,8 +2,7 @@ import express from 'express';
 import { Client, GatewayIntentBits } from 'discord.js';
 import { ObjectId } from 'mongodb';
 import process from 'process';
-import { connectToDB } from '../database.mjs';
-const db = await connectToDB();
+import { db } from '../../database.mjs';
 import chunkText from '../util/chunk-text.mjs';
 
 const router = express.Router();
