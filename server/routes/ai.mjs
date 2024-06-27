@@ -1,7 +1,7 @@
 import express from 'express';
 import bodyParser from 'body-parser';
 import { ObjectId } from 'mongodb';
-import { connectToDB() } from '../database.mjs';
+import { connectToDB } from '../database.mjs';
 
 const db = connectToDB();
 
