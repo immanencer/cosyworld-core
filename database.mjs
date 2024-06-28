@@ -19,6 +19,7 @@ async function connectToMongoDB() {
         console.log('MongoDB connected');
     } catch (err) {
         console.error('Error connecting to MongoDB:', err);
+        throw err;
     }
 }
 

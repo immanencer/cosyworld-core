@@ -127,5 +127,10 @@ console.log(`responsePrompt: ${responsePrompt}`);
     ]);
 
     console.log(`🤖 Response from ${avatar.name}:\n${response}`);
+    const tag = `(${avatar.location}) ${avatar.name}`;
+    if (response.startsWith(tag)) {
+        // strip off the tag
+        return response.slice(tag.length).trim();
+    }
     return response;
 }

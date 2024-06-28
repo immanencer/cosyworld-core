@@ -4,6 +4,7 @@ import { getLocations, updateAvatarLocation } from "./avatar.js";
 import { handleResponse } from "./response.js";
 
 const lastProcessedMessageIdByAvatar = new Map();
+const lastCheckedMessageIdByAvatar = new Map();
 
 export const getMessages = (location, since) =>
     fetchJSON(createURLWithParams(MESSAGES_API, { location, since }));
@@ -25,7 +26,14 @@ export async function processMessagesForAvatar(avatar) {
 
         await handleAvatarLocation(avatar, mentions, locations);
 
-        const messages = await fetchMessages(avatar, locations);
+        const lastCheckedId = lastCheckedMessageIdByAvatar.get(avatar.name);
+        const messages = await fetchMessages(avatar, locations, lastCheckedId);
+
+        if (messages.length === 0) {
+            console.log(`No new messages for ${avatar.name} since last check.`);
+            return;
+        }
+
         const conversation = buildConversation(avatar, messages, locations);
 
         if (shouldRespond(conversation)) {
@@ -33,6 +41,7 @@ export async function processMessagesForAvatar(avatar) {
         }
 
         updateLastProcessedMessageId(avatar, mentions);
+        updateLastCheckedMessageId(avatar, messages);
     } catch (error) {
         console.error(`Error processing messages for ${avatar.name}:`, error);
     }
@@ -85,16 +94,17 @@ const findNewLocation = (lastMention, locations) =>
     locations.find(loc => loc.id === lastMention.channelId || loc.parent === lastMention.channelId) ||
     locations[0];
 
-async function fetchMessages(avatar, locations) {
-    const rememberedLocations = avatar.remember || [avatar.location.name];
-    const messagePromises = rememberedLocations.map(locationName => {
-        const locationId = locations.find(loc => loc.name === locationName)?.id;
-        return locationId ? getMessages(locationId, null) : Promise.resolve([]);
-    });
-
-    const allMessages = await Promise.all(messagePromises);
-    return allMessages.flat().sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-}
+    async function fetchMessages(avatar, locations, lastCheckedId) {
+        const rememberedLocations = [...(avatar.remember || []), avatar.location.name];
+        const messagePromises = rememberedLocations.map(locationName => {
+            const locationId = locations.find(loc => loc.name === locationName)?.id;
+            return locationId ? getMessages(locationId, lastCheckedId) : Promise.resolve([]);
+        });
+    
+        const allMessages = await Promise.all(messagePromises);
+        return allMessages.flat().sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    }
+    
 
 const buildConversation = (avatar, messages, locations) =>
     messages.map(message => {
@@ -117,4 +127,10 @@ const updateLastProcessedMessageId = (avatar, mentions) => {
     if (mentions.length > 0) {
         lastProcessedMessageIdByAvatar.set(avatar.name, mentions[mentions.length - 1]._id);
     }
-};
+}
+
+const updateLastCheckedMessageId = (avatar, messages) => {
+    if (messages.length > 0) {
+        lastCheckedMessageIdByAvatar.set(avatar.name, messages[messages.length - 1]._id);
+    }
+}
