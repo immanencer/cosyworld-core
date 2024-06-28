@@ -1,7 +1,7 @@
 import express from 'express';
 import { ObjectId } from 'mongodb';
 import { db } from '../../database.mjs';
-import { isDiscordReady, sendMessage } from '../../services/discord.mjs';
+import { initializeDiscordClient, isDiscordReady, sendMessage } from '../../services/discord.mjs';
 
 const router = express.Router();
 const MESSAGES_COLLECTION = 'messages';
@@ -9,6 +9,9 @@ const LOCATIONS_COLLECTION = 'locations';
 
 // Middleware
 router.use(express.json());
+
+// Initialize Discord client
+initializeDiscordClient().catch(console.error);
 
 // Helper function to handle database errors
 function handleDatabaseError(res, error, operation) {
