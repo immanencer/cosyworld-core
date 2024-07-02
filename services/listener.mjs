@@ -1,7 +1,6 @@
 import { Client, GatewayIntentBits, Events } from 'discord.js';
 import { db } from '../database.mjs';
 import ReplicateService from './ai/replicate-service.mjs';
-import winston from 'winston';
 
 // Constants
 const MESSAGES_COLLECTION = 'messages';
@@ -11,22 +10,13 @@ const IMAGE_EXTENSIONS = /\.(jpeg|jpg|gif|png)$/i;
 
 // Environment variables
 const discordToken = process.env.DISCORD_BOT_TOKEN;
-const logLevel = process.env.LOG_LEVEL || 'info';
 
-// Logger setup
-const logger = winston.createLogger({
-    level: logLevel,
-    format: winston.format.combine(
-        winston.format.timestamp(),
-        winston.format.printf(({ level, message, timestamp }) => {
-            return `${timestamp} ${level}: ${message}`;
-        })
-    ),
-    transports: [
-        new winston.transports.Console(),
-        new winston.transports.File({ filename: 'bot.log' })
-    ]
-});
+// Logging function
+function log(level, message, error = null) {
+    const timestamp = new Date().toISOString();
+    console[level](`${timestamp} ${level.toUpperCase()}: ${message}`);
+    if (error) console.error(error);
+}
 
 // AI service setup
 const ai = new ReplicateService();
@@ -43,7 +33,7 @@ const client = new Client({
 // Database operations
 async function createOrUpdateLocation(channelId, channelName, guildId) {
     try {
-        const location = await db.collection(LOCATIONS_COLLECTION).findOneAndUpdate(
+        const result = await db.collection(LOCATIONS_COLLECTION).findOneAndUpdate(
             { channelId },
             { 
                 $set: { 
@@ -56,18 +46,19 @@ async function createOrUpdateLocation(channelId, channelName, guildId) {
             { upsert: true, returnDocument: 'after' }
         );
 
-        logger.info(`Location ${location.value.channelName} ${location.lastErrorObject.updatedExisting ? 'updated' : 'created'}`);
+        const action = result.lastErrorObject.updatedExisting ? 'updated' : 'created';
+        log('info', `Location ${result.value.channelName} ${action}`);
     } catch (error) {
-        logger.error('Failed to create/update location:', error);
+        log('error', 'Failed to create/update location:', error);
     }
 }
 
 async function logMessageToDatabase(messageData) {
     try {
         await db.collection(MESSAGES_COLLECTION).insertOne(messageData);
-        logger.info('Message logged to MongoDB');
+        log('info', 'Message logged to MongoDB');
     } catch (error) {
-        logger.error('Failed to log message:', error);
+        log('error', 'Failed to log message:', error);
     }
 }
 
@@ -82,7 +73,7 @@ async function processImage(imageUrl) {
         });
         return imageDescription;
     } catch (error) {
-        logger.error(`Failed to analyze image ${imageUrl}:`, error);
+        log('error', `Failed to analyze image ${imageUrl}:`, error);
         return null;
     }
 }
@@ -129,27 +120,28 @@ async function handleMessage(message) {
 
 // Event handlers
 client.once(Events.ClientReady, () => {
-    logger.info(`Logged in as ${client.user.tag}`);
+    log('info', `Logged in as ${client.user.tag}`);
 });
 
 client.on(Events.MessageCreate, async (message) => {
     try {
         await handleMessage(message);
     } catch (error) {
-        logger.error('Error processing message:', error);
+        log('error', 'Error processing message:', error);
     }
 });
 
 // Error handling
 client.on(Events.Error, (error) => {
-    logger.error('Discord client error:', error);
+    log('error', 'Discord client error:', error);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-    logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    log('error', 'Unhandled Rejection at:', reason);
+    console.error(promise);
 });
 
 // Start the bot
 client.login(discordToken).catch(error => {
-    logger.error('Discord login error:', error);
+    log('error', 'Discord login error:', error);
 });
