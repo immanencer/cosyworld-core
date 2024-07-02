@@ -17,6 +17,9 @@ app.use('/ai', ai);
 import avatars from './routes/avatars.mjs';
 app.use('/avatars', avatars);
 
+import statistics from './routes/statistics.mjs';
+app.use('/statistics', statistics);
+
 // Third-party API routes
 
 import discordBot from './routes/discord.mjs';
