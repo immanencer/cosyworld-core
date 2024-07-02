@@ -57,4 +57,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-This is a permissive (MIT) open source project. Please attribute this github account in source code.
+This is a permissive (MIT) open source project. Please attribute this github account somehow in derived versions.
