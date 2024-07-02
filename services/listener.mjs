@@ -46,10 +46,14 @@ async function createOrUpdateLocation(channelId, channelName, guildId) {
             { upsert: true, returnDocument: 'after' }
         );
 
-        const action = result.lastErrorObject.updatedExisting ? 'updated' : 'created';
-        log('info', `Location ${result.value.channelName} ${action}`);
+        if (result && result.value) {
+            const action = result.lastErrorObject && result.lastErrorObject.updatedExisting ? 'updated' : 'created';
+            log('info', `Location ${result.value.channelName} ${action}`);
+        } else {
+            log('warn', `Unexpected result when creating/updating location for channel ${channelId}`);
+        }
     } catch (error) {
-        log('error', 'Failed to create/update location:', error);
+        log('error', `Failed to create/update location for channel ${channelId}:`, error);
     }
 }
 
