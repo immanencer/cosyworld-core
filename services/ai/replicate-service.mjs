@@ -63,4 +63,35 @@ export default class ReplicateService {
 
         return result.output.join('');
     }
+
+    async viewImageByUrl({ imageUrl, prompt, maxTokens = 1024, temperature = 0.2 }) {
+        const requestBody = {
+            version: "b5f6212d032508382d61ff00469ddda3e32fd8a0e75dc39d8a4191bb742157fb",
+            input: {
+                image: imageUrl,
+                top_p: 1,
+                prompt: prompt,
+                max_tokens: maxTokens,
+                temperature: temperature
+            }
+        };
+
+        const response = await fetch('https://api.replicate.com/v1/predictions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${this.apiToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('🦙 Failed to get response from Replicate:', errorText);
+            throw new Error('Failed to get response from Replicate');
+        }
+
+        const prediction = await response.json();
+        return this.pollPredictionResult(prediction.id);
+    }
 }
