@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cosyworld Advanced Dashboard</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: monospace;
+            background: #000;
+            color: #0f0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+        #metrics {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            padding: 10px;
+        }
+        .metric {
+            border: 1px solid #0f0;
+            padding: 10px;
+            text-align: center;
+        }
+        #chart {
+            flex-grow: 1;
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1 style="text-align:center;margin:10px 0;">Cosyworld Dashboard</h1>
+    <div id="metrics"></div>
+    <canvas id="chart"></canvas>
+
+    <script>
+    (function() {
+        const COLORS = ['#0f0', '#f00', '#ff0', '#0ff'];
+        const METRICS = ['messages', 'errors', 'actions', 'statuses'];
+        const MAX_POINTS = 20;
+        let data = Array(MAX_POINTS).fill().map(() => METRICS.reduce((acc, m) => ({...acc, [m]: 0}), {timestamp: Date.now()}));
+
+        const metricsEl = document.getElementById('metrics');
+        const canvas = document.getElementById('chart');
+        const ctx = canvas.getContext('2d');
+
+        function updateMetrics() {
+            metricsEl.innerHTML = METRICS.map((m, i) => `
+                <div class="metric">
+                    <div>${m}</div>
+                    <div style="color:${COLORS[i]};font-size:1.5em;">${data[data.length-1][m]}</div>
+                </div>
+            `).join('');
+        }
+
+        function drawChart() {
+            const {width, height} = canvas.getBoundingClientRect();
+            canvas.width = width;
+            canvas.height = height;
+            ctx.clearRect(0, 0, width, height);
+
+            const max = Math.max(...data.flatMap(d => METRICS.map(m => d[m])));
+            const xStep = width / (MAX_POINTS - 1);
+            const yScale = (height - 40) / max;
+
+            METRICS.forEach((metric, i) => {
+                ctx.strokeStyle = COLORS[i];
+                ctx.beginPath();
+                data.forEach((d, x) => {
+                    const xPos = x * xStep;
+                    const yPos = height - (d[metric] * yScale) - 20;
+                    ctx[x ? 'lineTo' : 'moveTo'](xPos, yPos);
+                });
+                ctx.stroke();
+            });
+
+            // X-axis labels
+            ctx.fillStyle = '#0f0';
+            ctx.font = '10px monospace';
+            [0, MAX_POINTS - 1].forEach(i => {
+                const text = new Date(data[i].timestamp).toLocaleTimeString();
+                const x = i * xStep;
+                ctx.fillText(text, x, height - 5);
+            });
+
+            // Y-axis labels
+            ctx.fillText('0', 5, height - 5);
+            ctx.fillText(max.toString(), 5, 15);
+        }
+
+        function update() {
+            data.push(METRICS.reduce((acc, m) => ({...acc, [m]: Math.floor(Math.random() * 50)}), {timestamp: Date.now()}));
+            data = data.slice(-MAX_POINTS);
+            updateMetrics();
+            drawChart();
+        }
+
+        new ResizeObserver(drawChart).observe(canvas);
+        setInterval(update, 1000);
+        update();
+    })();
+    </script>
+</body>
+</html>

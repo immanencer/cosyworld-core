@@ -159,6 +159,7 @@ async function processRequest(action, data) {
     await selectedAction();
 }
 
+const PORT = process.env.PORT || 3000;
 // Periodic processing
 setInterval(async () => {
     if (!isDiscordReady() || !db) {
@@ -167,7 +168,7 @@ setInterval(async () => {
     }
 
     try {
-        await fetch('http://localhost:3000/discord/process');
+        await fetch(`http://localhost:${PORT}/discord/process`);
     } catch (error) {
         console.error('🎮 ❌ Failed to process:', error);
     }
