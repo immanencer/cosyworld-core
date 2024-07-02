@@ -30,7 +30,6 @@ export async function processMessagesForAvatar(avatar) {
         const messages = await fetchMessages(avatar, locations, lastCheckedId);
 
         if (messages.length === 0) {
-            console.log(`No new messages for ${avatar.name} since last check.`);
             return;
         }
 
