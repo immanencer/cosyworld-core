@@ -15,9 +15,6 @@ app.use('/ai', ai);
 import avatars from './routes/avatars.mjs';
 app.use('/avatars', avatars);
 
-import forest from './routes/forest.mjs';
-app.use('/forest', forest);
-
 // Third-party API routes
 
 import discordBot from './routes/discord.mjs';
@@ -25,9 +22,6 @@ app.use('/discord', discordBot);
 
 import summarizer from './routes/summarizer.mjs';
 app.use('/summarizer',summarizer);
-
-import x from './routes/x.mjs';
-app.use('/x', x);
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
