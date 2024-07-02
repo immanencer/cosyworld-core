@@ -57,4 +57,5 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-This is a permissive (MIT) open source project. Please attribute this github account somehow in derived versions.
+This is a permissive (MIT) open source project. Please retain the following github link in the readme. 
+https://github.com/immanencer/cosyworld-core
