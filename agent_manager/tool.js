@@ -5,12 +5,12 @@ import { examineRoom, takeObject, useObject, leaveObject, createObject, getAvata
 import { waitForTask } from './task.js';
 import { postResponse } from './response.js';
 
-let locations;
+let locations = [];
+
 try {
     locations = await getLocations();
 } catch (error) {
     console.error('Failed to get locations:', error);
-    locations = [];
 }
 
 const tools = {
@@ -26,50 +26,45 @@ const tools = {
     },
     examine_room: async (avatar, _, conversation) => {
         const tool_result = await examineRoom(avatar);
-        let message = '';
-        let counter = 0;
-
-        for (const item of tool_result.objects) {
-            if (conversation.find(T => T.author.username.includes(item.name))) continue;
-
+        const examinedItems = tool_result.objects.map(async item => {
+            if (conversation.some(msg => msg.author.username.includes(item.name))) return null;
             item.location = avatar.location;
-            item.name = item.name + (item.takenBy ? ` (held by ${item.takenBy})` : '');
+            item.name += item.takenBy ? ` (held by ${item.takenBy})` : '';
 
             const description = await waitForTask(
-                { name: item.name, personality: `you are the ${item.name}\n${item.description}` },
-                [{ role: 'user', content: `here are your statistics: ${JSON.stringify(item)}\n\ndescribe yourself in a SHORT whimsical sentence or *action*.` }]
+                { name: item.name, personality: `You are the ${item.name}. ${item.description}` },
+                [{ role: 'user', content: `Describe yourself in a short whimsical sentence or *action*.` }]
             );
 
             await postResponse(item, description);
-            counter++;
-            message += `${item.name} - ${item.description}\n`;
-        }
+            return `${item.name} - ${description}`;
+        });
 
-        message = `I have examined the room and revealed its secrets, there are ${counter} items here.\n\n${message}`;
+        const messages = (await Promise.all(examinedItems)).filter(Boolean);
+        const messageCount = messages.length;
+        const message = `I have examined the room and revealed its secrets. There are ${messageCount} items here:\n\n${messages.join('\n')}`;
 
-        // Summarize the last 100 messages
-        const lastMessages = conversation.slice(-100);
-        const summaryPrompt = `Summarize the following conversation in a concise paragraph:\n\n${lastMessages.map(m => `${m.content}`).join('\n')}`;
+        const lastMessages = conversation.slice(-100).map(m => m.content).join('\n');
+        const summaryPrompt = `Summarize the following conversation in a concise paragraph:\n\n${lastMessages}`;
         
         const summary = await waitForTask(
             { name: "Conversation Summarizer", personality: "You are a skilled conversation summarizer." },
             [{ role: 'user', content: summaryPrompt }]
         );
 
-        message += `\n\nRecent conversation summary:\n${summary}`;
-
-        console.log(`🔍 Examining room for ${avatar.name} in ${avatar.location.name}: ${message}`);
+        const finalMessage = `${message}\n\nRecent conversation summary:\n${summary}`;
+        console.log(`🔍 Examining room for ${avatar.name} in ${avatar.location.name}: ${finalMessage}`);
 
         await postJSON(MESSAGES_API, {
             message_id: 'default_id',
             author: avatar,
-            content: message,
+            content: finalMessage,
             createdAt: new Date().toISOString(),
             channelId: locations.find(loc => loc.name === avatar.location.name)?.id,
             guildId: 'default_guild_id'
         });
 
-        return message;
+        return finalMessage;
     },
     take_object: takeObject,
     use_object: useObject,
@@ -101,13 +96,9 @@ export async function callTool(tool, avatar, conversation) {
 
         return await toolFunction(avatar, args.join('('), conversation);
     } catch (error) {
-
-        const objects = getAvatarObjects(avatar);
-        if (objects && objects.length > 0) {
-            const object = objects.find(o => o.name === tool);
-            if (object) {
-                return await useObject(avatar, tool, conversation);
-            }
+        const object = getAvatarObjects(avatar).find(o => o.name === tool);
+        if (object) {
+            return await useObject(avatar, tool, conversation);
         }
         return `Error calling tool ${tool}: ${error.message}`;
     }
