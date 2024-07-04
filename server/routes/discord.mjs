@@ -43,9 +43,9 @@ router.post('/messages', async (req, res) => {
         message_id: id || 'default_id',
         author: {
             id: author?.id || 'default_author_id',
-            username: author?.displayName || 'default_username',
+            username: author?.displayName || author?.username || 'default_username',
             discriminator: author?.discriminator || '0000',
-            avatar: author?.avatar || 'default_avatar_url'
+            avatar: author?.avatar || author?.avatarURL || 'default_avatar_url'
         },
         content: content || 'default_content',
         createdAt: createdAt || new Date().toISOString(),
