@@ -94,7 +94,7 @@ const findNewLocation = (lastMention, locations) =>
     locations[0];
 
     async function fetchMessages(avatar, locations, lastCheckedId) {
-        const rememberedLocations = [...(avatar.remember || []), avatar.location.name];
+        const rememberedLocations = Array.from((new Set([...(avatar.remember || []), avatar.location.name])).entries());
         const messagePromises = rememberedLocations.map(locationName => {
             const locationId = locations.find(loc => loc.name === locationName)?.id;
             return locationId ? getMessages(locationId, lastCheckedId) : Promise.resolve([]);

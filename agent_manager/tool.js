@@ -49,7 +49,7 @@ const tools = {
 
         // Summarize the last 100 messages
         const lastMessages = conversation.slice(-100);
-        const summaryPrompt = `Summarize the following conversation in a concise paragraph:\n\n${lastMessages.map(m => `${m.author.name}: ${m.content}`).join('\n')}`;
+        const summaryPrompt = `Summarize the following conversation in a concise paragraph:\n\n${lastMessages.map(m => `${m.content}`).join('\n')}`;
         
         const summary = await waitForTask(
             { name: "Conversation Summarizer", personality: "You are a skilled conversation summarizer." },
