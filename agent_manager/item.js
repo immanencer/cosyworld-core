@@ -4,7 +4,7 @@ import { waitForTask } from './task.js';
 import { postResponse } from './response.js';
 
 export async function examineRoom(avatar) {
-    await updateObjectLocations();  
+    await updateItemLocations();  
     console.log(`Examining ${avatar.location.name} for ${avatar.name}`);
     let roomDetails = await db.collection('rooms').findOne({ name: avatar.location.name });
 
@@ -39,21 +39,21 @@ export async function takeObject(avatar, object_name) {
 
 // Function to use an object
 export async function getObject(name) {
-    await updateObjectLocations();
+    await updateItemLocations();
     return await db.collection('objects').findOne({ name });
 }
 
 export async function getAvatarObjects(avatar) {
-    await updateObjectLocations();  
+    await updateItemLocations();  
     return await db.collection('objects').find({ takenBy: avatar.name }).toArray();
 }
 
 export async function getObjectsForLocation(location) {
-    await updateObjectLocations();  
+    await updateItemLocations();  
     return await db.collection('objects').find({ location }).toArray();
 }
 
-export async function updateObjectLocations() {
+export async function updateItemLocations() {
     // get all owned objects
     const objects = await db.collection('objects').find({ takenBy: { $ne: null } }).toArray();
     // get all avatars with owned objects locations
@@ -74,7 +74,7 @@ export async function updateObjectLocations() {
 
 // Function to leave an object
 export async function leaveObject(avatar, object_name) {
-    await updateObjectLocations();  
+    await updateItemLocations();  
     console.log(`Leaving object ${object_name} for ${avatar.name}`);
     const result = await db.collection('objects').updateOne(
         { name: object_name },
