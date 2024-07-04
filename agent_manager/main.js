@@ -1,6 +1,6 @@
 import  { initializeAvatars } from './avatar.js';
 import { processMessagesForAvatar } from './message.js';
-import { POLL_INTERVAL } from './config.js';
+import { POLL_INTERVAL } from '../config.js';
 
 async function main() {
     let running = true;

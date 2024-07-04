@@ -1,82 +1,96 @@
-# CosyWorld Core Module
+# CosyWorld Core
 
 ## Overview
 
-CosyWorld Core is an AI-powered bot system designed for immersive group chat environments. It supports multiple AI models and features dynamic memory management, allowing bots (referred to as "avatars") to remember and respond to conversations across different chat locations. The system is built with a focus on creating engaging, character-driven interactions.
+CosyWorld Core transforms group chats into dynamic, engaging environments using advanced AI to foster conversations and interactions. This system crafts persistent, intelligent avatars that evolve and respond meaningfully within any digital platform.
 
-## Key Features
+## Core Features: ACORN
 
-- Support for multiple AI models (OpenAI, Anthropic, Ollama)
-- Dynamic cross-channel memory for avatars
-- Adaptive conversation handling with character-specific traits
-- Optimized message processing to reduce unnecessary API calls
-- Unique avatar personalities and backstories
-- Integration with chat platforms (e.g., Discord)
+- **Adaptive Personality Engine:** Avatars dynamically adjust behavior based on interactions.
+- **Contextual Response Generator:** Produces accurate responses based on context.
+- **Omnichannel Integration:** Seamlessly connects with various chat platforms.
+- **Real-time Environment Simulator:** Manages dynamic virtual environments.
+- **Networked Memory:** Maintains a complex web of relationships and past interactions.
 
-## Main Components
+## System Architecture: LUNA
 
-1. **Avatar System**: Manages individual AI-powered characters with unique traits and behaviors.
-2. **AI Service**: A wrapper for different AI services, allowing easy switching between models.
-3. **Message Processing**: Efficiently fetches and processes new messages for each avatar.
-4. **Tools**: Custom functions that avatars can use to interact with the environment or perform specific tasks.
-5. **Memory Management**: Handles storage and retrieval of conversation history across different channels.
+- **Linguistic Processing Core:** Analyzes and interprets language inputs.
+- **User Interaction Manager:** Handles interactions between users and avatars.
+- **Neural Network Framework:** Powers advanced AI capabilities.
+- **Avatar Control System:** Oversees avatar behavior and actions.
 
-## Setup
+## Launch System: SAIL
 
-1. Clone the repository:
-   ```
-   git clone [your-repo-url]
+- **Server Initialization:** Boots up the main server application.
+- **Agent Manager Activation:** Deploys and manages avatar agents.
+- **Intelligence Core Startup:** Initiates AI processing components.
+- **Listener Deployment:** Monitors and routes incoming and outgoing messages.
+
+## Quick Start Guide
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/your-username/cosyworld-core.git
    cd cosyworld-core
-   ```
-
-2. Install dependencies:
-   ```
    npm install
    ```
 
-3. Set up environment variables:
-   Create a `.env` file in the project root and add the following:
-   ```
-   OPENAI_API_KEY=your_openai_api_key
-   ANTHROPIC_API_KEY=your_anthropic_api_key
-   DISCORD_BOT_TOKEN=your_discord_bot_token
-   ```
-
-4. Configure your avatars:
-   Edit the `config.js` file to set up your avatars, their traits, and preferred AI models.
-
-5. Run the application:
-   ```
-   npm start
+2. **Configure environment variables:**
+   Create a `.env` file in the root directory with the following:
+   ```env
+   REPLICATE_API_TOKEN=your_token
+   DISCORD_BOT_TOKEN=your_token
+   MONGODB_URI=your_uri
    ```
 
-## Usage
+3. **Set up avatars in `config.js`.
 
-The system will automatically process messages for each configured avatar. Avatars will respond to messages in their current location and can be summoned to other locations by mentions.
+4. **Launch system components with PM2:**
+   - Ensure you have PM2 installed: `npm install pm2 -g`
+   - Start all processes: `pm2 start ecosystem.config.js`
 
-### Avatar Interaction
+## Development Structure
 
-Avatars like Solana-hakase and C.L.O.C.K. have unique personalities and can interact with users and each other. They can use tools like `examine_room` to gather information about their environment.
+The project is organized as follows:
 
-Example interaction:
+```plaintext
+cosyworld-core/
+├── server/
+│   └── index.mjs             # Main server application
+├── services/
+│   ├── intelligence-processor.mjs  # AI processing
+│   └── listener.mjs          # Event and message monitoring
+├── agent_manager/
+│   └── main.js               # Avatar behavior control
+├── config.js                 # System and avatar configuration
+└── [additional modules]      # Supplementary system components
 ```
-User: Solana-hakase, can you check the <kee> generator?
-Solana-hakase: Certainly! I'll run a diagnostic. C.L.O.C.K., can you assist?
-C.L.O.C.K.: Mrow Ready to help, Hakase-sama! 🐱💻
-```
 
-## Development
+## Extensibility
 
-The project is structured with separate files for different functionalities:
+CosyWorld Core is designed with modularity in mind, allowing for various expansions:
 
-- `main.js`: The entry point of the application, handling the main loop for avatar processing.
-- `avatar.js`: Defines avatar behaviors and characteristics.
-- `message.js`: Handles message processing and routing.
-- `tools.js`: Contains custom functions that avatars can use.
+- **Personality Crafting:** Design and implement new avatar archetypes.
+- **Ability Augmentation:** Develop additional tools and capabilities for avatars.
+- **Environment Expansion:** Extend and enrich the virtual environment.
+- **Platform Integration:** Connect with new chat platforms and services.
 
-## Contributing
+Refer to our [contribution guidelines](CONTRIBUTING.md) for detailed information on how to extend and contribute to the project.
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+## Technology Stack
+
+CosyWorld Core leverages modern technologies:
+
+- **MongoDB:** Ensures efficient and reliable data storage.
+- **Express.js:** Powers our lightweight and flexible web server.
+- **Replicate:** Provides access to state-of-the-art open-source language models.
+- **Discord:** Integrates for seamless chat platform interactions.
+
+## Use Cases
+
+- **Virtual Community Management:** Enhance engagement in online communities with intelligent avatars.
+- **Customer Support:** Deploy avatars to provide 24/7 support and handle common queries.
+- **Interactive Storytelling:** Create dynamic narratives driven by AI avatars in chat environments.
 
 ## License
 
@@ -84,4 +98,4 @@ This project is open source and available under the [MIT License](LICENSE).
 
 ## Acknowledgments
 
-This project uses various AI models and APIs to create an engaging chat experience. Special thanks to the teams behind OpenAI, Replicate, and Ollama for their incredible AI technologies.
+We extend our gratitude to the communities behind MongoDB, Express.js, Replicate, and Discord that power our system.

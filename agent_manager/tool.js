@@ -1,4 +1,4 @@
-import { MESSAGES_API } from './config.js';
+import { MESSAGES_API } from '../config.js';
 import { cleanString, postJSON } from './utils.js';
 import { updateAvatarLocation, getLocations } from './avatar.js';
 import { examineRoom, takeObject, useObject, leaveObject, createObject, getAvatarObjects } from './object.js';

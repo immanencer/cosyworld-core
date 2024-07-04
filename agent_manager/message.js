@@ -1,4 +1,4 @@
-import { MESSAGES_API } from "./config.js";
+import { MESSAGES_API } from "../config.js";
 import { fetchJSON, createURLWithParams } from "./utils.js";
 import { getLocations, updateAvatarLocation } from "./avatar.js";
 import { handleResponse } from "./response.js";

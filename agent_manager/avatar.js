@@ -1,4 +1,4 @@
-import { AVATARS_API, LOCATIONS_API } from './config.js';
+import { AVATARS_API, LOCATIONS_API } from '../config.js';
 import { fetchJSON } from './utils.js';
 
 let lastCacheTime = null;

@@ -1,4 +1,4 @@
-import { TASKS_API, POLL_INTERVAL } from './config.js';
+import { TASKS_API, POLL_INTERVAL } from '../config.js';
 import { postJSON, fetchJSON } from './utils.js';
 
 export async function createTask(system_prompt, messages) {

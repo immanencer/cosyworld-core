@@ -1,4 +1,4 @@
-import { ENQUEUE_API } from './config.js';
+import { ENQUEUE_API } from '../config.js';
 import { postJSON, retry } from './utils.js';
 import { waitForTask } from './task.js';
 import { callTool, getAvailableTools } from './tool.js';

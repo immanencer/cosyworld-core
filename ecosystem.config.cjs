@@ -7,7 +7,7 @@ module.exports = {
     },
     {
       "name": "ai",
-      "script": "./services/ai-processor.mjs"
+      "script": "./services/intelligence-processor.mjs"
     },
     {
       "name": "agents",
