@@ -46,9 +46,9 @@ async function createOrUpdateLocation(channelId, channelName, guildId) {
             { upsert: true, returnDocument: 'after' }
         );
 
-        if (result && result.value) {
-            const action = result.lastErrorObject && result.lastErrorObject.updatedExisting ? 'updated' : 'created';
-            log('info', `Location ${result.value.channelName} ${action}`);
+        if (result) {
+            const action = result.lastErrorObject && result.lastErrorObject?.updatedExisting ? 'updated' : 'created';
+            log('info', `Location ${result.channelName} ${action}`);
         } else {
             log('warn', `Unexpected result when creating/updating location for channel ${channelId}`);
         }

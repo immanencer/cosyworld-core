@@ -27,9 +27,18 @@ export async function processMessagesForAvatar(avatar) {
         await handleAvatarLocation(avatar, mentions, locations);
 
         const lastCheckedId = lastCheckedMessageIdByAvatar.get(avatar.name);
-        const messages = await fetchMessages(avatar, locations, lastCheckedId);
+        const messages = await fetchMessages(avatar, locations, null);
 
+        // If the last message is from me, don't respond
         if (messages.length === 0) {
+            return;
+        }
+
+        const lastMessage = messages[messages.length - 1];
+
+        if (!lastCheckedId || lastMessage.message_id < lastCheckedId) {
+            lastCheckedMessageIdByAvatar.set(avatar.name, lastMessage.message_id);
+        } else {
             return;
         }
 
@@ -93,17 +102,17 @@ const findNewLocation = (lastMention, locations) =>
     locations.find(loc => loc.id === lastMention.channelId || loc.parent === lastMention.channelId) ||
     locations[0];
 
-    async function fetchMessages(avatar, locations, lastCheckedId) {
-        const rememberedLocations = Array.from((new Set([...(avatar.remember || []), avatar.location.name])).entries());
-        const messagePromises = rememberedLocations.map(locationName => {
-            const locationId = locations.find(loc => loc.name === locationName)?.id;
-            return locationId ? getMessages(locationId, lastCheckedId) : Promise.resolve([]);
-        });
-    
-        const allMessages = await Promise.all(messagePromises);
-        return allMessages.flat().sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-    }
-    
+async function fetchMessages(avatar, locations, lastCheckedId) {
+    const rememberedLocations = [...new Set([...(avatar.remember || []), [avatar.location.name]])];
+    const messagePromises = rememberedLocations.map(locationName => {
+        const locationId = locations.find(loc => loc.name === locationName)?.id;
+        return locationId ? getMessages(locationId, lastCheckedId) : Promise.resolve([]);
+    });
+
+    const allMessages = await Promise.all(messagePromises);
+    return allMessages.flat().sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+}
+
 
 const buildConversation = (avatar, messages, locations) =>
     messages.map(message => {

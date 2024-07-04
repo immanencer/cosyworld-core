@@ -1,7 +1,7 @@
 import { MongoClient } from 'mongodb';
 
 // MongoDB URI and Database Name
-const mongoURI = process.env.MONGODB_CONNECTION_STRING || 'mongodb://localhost:27017';
+const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017';
 const dbName = 'cosyworld';
 
 // Create a new MongoClient
