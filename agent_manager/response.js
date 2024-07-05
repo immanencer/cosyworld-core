@@ -3,8 +3,7 @@ import crypto from 'crypto';
 import { ENQUEUE_API } from '../config.js';
 import { postJSON, retry } from './utils.js';
 import { waitForTask } from './ai.js';
-import { callTool, getAvailableTools } from './tool.js';
-import { getAvatarItems } from './item.js';
+import { getAvatarItems, callTool, getAvailableTools } from './item.js';
 import { updateAvatarOnServer } from './avatar.js';
 
 const MAX_RETRIES = 3;
@@ -26,7 +25,6 @@ export const postResponse = retry(async (avatar, response) => {
 }, MAX_RETRIES, RETRY_DELAY);
 
 export async function handleResponse(avatar, conversation) {
-    
     try {
         if (!(await shouldRespond(avatar, conversation))) { 
             console.log(`🤖 Skipping response for ${avatar.name} in ${avatar.location.name}`);
@@ -52,6 +50,7 @@ export async function handleResponse(avatar, conversation) {
         console.error(`Error in handleResponse for ${avatar.name}:`, error);
     }
 }
+
 const checkedConversations = new Map();
 
 const hashConversation = (conversation) => {
@@ -84,7 +83,6 @@ async function shouldRespond(avatar, conversation) {
         { role: 'user', content: 'Write a haiku to decide if you should respond.' }
     ]);
 
-    // pretty prent the haiku, indendted
     console.log(`📜 Haiku from ${avatar.name}:\n${haiku.split('\n').map(line => `    ${line}`).join('\n')}`);
 
     const haikuCheck = await waitForTask({ personality: 'You are an excellent judge of intention' }, [
@@ -111,14 +109,21 @@ async function shouldRespond(avatar, conversation) {
 async function handleTools(avatar, conversation, items, availableTools) {
     const recentConversation = conversation.slice(-5);
     const toolsPrompt = `
-You have the following items: ${JSON.stringify(items)}.
-Return a single relevant tool call from this list, be sure to modify the parameters:
+You have these items:
 
-${availableTools.map(tool => {
-    const [name, params = ''] = tool.split('(');
-    return `${name}(${params.split(',').map(p => `"${p.trim().replace(/"/g, '')}"`).join(', ')})`;
-}).join('\n')}
+${items.map(T => T.name).join('\n')}.
 
+You can perform these functions:
+
+SEARCH
+MOVE some-location
+TAKE Some Item
+DROP Some Item
+
+
+Respond with the tool call for each function you want to use.
+separate each tool call with a new line.
+To use an item respond with the item name and describe what you do with it.
 If no tool is relevant, return NONE.
 `;
 
