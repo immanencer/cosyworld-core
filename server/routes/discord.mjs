@@ -13,17 +13,31 @@ const MESSAGES_COLLECTION = 'messages';
 router.use(express.json());
 
 // Helper function to handle database errors
-function handleDatabaseError(res, error, operation) {
+const handleDatabaseError = (res, error, operation) => {
     console.error(`Failed to ${operation}:`, error);
     res.status(500).send({ error: `Failed to ${operation}` });
-}
+};
 
 // API Routes
 router.get('/messages', async (req, res) => {
     const { since, location } = req.query;
     const query = {};
-    if (since) query._id = { $gt: new ObjectId(since) };
-    if (location) query.channelId = location;
+
+    if (since) {
+        const sinceDate = new Date(since);
+        if (!isNaN(sinceDate.getTime())) {
+            query.createdAt = { $gt: sinceDate };
+        } else {
+            console.log('Invalid date format for "since" parameter:', since);
+            return res.status(400).send({ error: 'Invalid date format for "since" parameter' });
+        }
+    }
+
+    if (location) {
+        query.channelId = location;
+    }
+
+    console.log('Query:', query); // Debugging line to log the query being executed
 
     try {
         const messages = await db.collection(MESSAGES_COLLECTION)
@@ -31,6 +45,7 @@ router.get('/messages', async (req, res) => {
             .sort({ createdAt: -1 })
             .limit(100)
             .toArray();
+        console.log('Messages found:', messages.length); // Debugging line to log the number of messages found
         res.status(200).send(messages);
     } catch (error) {
         handleDatabaseError(res, error, 'fetch messages');
@@ -65,7 +80,7 @@ router.get('/messages/mention', async (req, res) => {
     const { name, since } = req.query;
     const query = {};
     if (since) query._id = { $gt: new ObjectId(since) };
-    if (name) query.content = { $regex: new RegExp('\\b' + name + '\\b', 'i') };
+    if (name) query.content = { $regex: new RegExp(`\\b${name}\\b`, 'i') };
 
     try {
         const messages = await db.collection(MESSAGES_COLLECTION)
@@ -88,8 +103,7 @@ router.get('/locations', async (req, res) => {
         const locations = await getLocations();
         res.status(200).send(locations);
     } catch (error) {
-        console.error('🎮 ❌ Failed to fetch locations:', error);
-        res.status(500).send({ error: 'Failed to fetch locations' });
+        handleDatabaseError(res, error, 'fetch locations');
     }
 });
 
@@ -106,11 +120,8 @@ router.post('/enqueue', async (req, res) => {
 });
 
 router.get('/process', async (req, res) => {
-    if (!db) {
-        return res.status(503).send({ error: 'Database service unavailable' });
-    }
-    if (!isDiscordReady()) {
-        return res.status(503).send({ error: 'Discord client not ready' });
+    if (!isDiscordReady() || !db) {
+        return res.status(503).send({ error: 'Service not ready' });
     }
 
     try {
@@ -120,7 +131,7 @@ router.get('/process', async (req, res) => {
             { sort: { createdAt: 1 }, returnDocument: 'after' }
         );
 
-        if (!request?.action) {
+        if (!request) {
             return res.status(200).send({ message: 'No queued requests' });
         }
 
@@ -136,9 +147,9 @@ router.get('/process', async (req, res) => {
     }
 });
 
-async function processRequest(action, data) {
+const processRequest = async (action, data) => {
     if (!isDiscordReady() || !db) {
-        throw new Error('Services not ready');
+        throw new Error('Service not ready');
     }
 
     const actions = {
@@ -157,10 +168,10 @@ async function processRequest(action, data) {
     }
 
     await selectedAction();
-}
+};
 
 const PORT = process.env.PORT || 3000;
-// Periodic processing
+
 setInterval(async () => {
     if (!isDiscordReady() || !db) {
         console.log('🎮 Services not ready');

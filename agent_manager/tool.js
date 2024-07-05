@@ -1,9 +1,7 @@
 import { MESSAGES_API } from '../config.js';
 import { cleanString, postJSON } from './utils.js';
 import { updateAvatarLocation, getLocations } from './avatar.js';
-import { examineRoom, takeObject, useObject, leaveObject, createObject, getAvatarObjects } from './item.js';
-import { waitForTask } from './task.js';
-import { postResponse } from './response.js';
+import { takeItem, useItem, leaveItem, getAvatarItems } from './item.js';
 
 let locations = [];
 
@@ -14,96 +12,70 @@ try {
 }
 
 const tools = {
-    change_location: async (avatar, data) => {
-        console.log(`${avatar.emoji} ${avatar.name} 🏃💨 ${data}`);
-        const new_location = locations.find(loc => loc.name === data);
-        if (new_location) {
-            avatar.location = new_location;
+    MOVE: async (avatar, locationName) => {
+        const newLocation = findLocation(locationName);
+        if (newLocation) {
+            avatar.location = newLocation;
             await updateAvatarLocation(avatar);
-            return `I have moved to ${new_location.name}.`;
+            return `Moved to ${newLocation.name}.`;
         }
-        return `Location ${data} not found.`;
+        return `Location "${locationName}" not found.`;
     },
-    examine_room: async (avatar, _, conversation) => {
-        const tool_result = await examineRoom(avatar);
-        const examinedItems = tool_result.objects.map(async item => {
-            if (conversation.some(msg => msg.author.username.includes(item.name))) return null;
-            item.location = avatar.location;
-            item.name += item.takenBy ? ` (held by ${item.takenBy})` : '';
-
-            const description = await waitForTask(
-                { name: item.name, personality: `You are the ${item.name}. ${item.description}` },
-                [{ role: 'user', content: `Describe yourself in a short whimsical sentence or *action*.` }]
-            );
-
-            await postResponse(item, description);
-            return `${item.name} - ${description}`;
-        });
-
-        const messages = (await Promise.all(examinedItems)).filter(Boolean);
-        const messageCount = messages.length;
-        const message = `I have examined the room and revealed its secrets. There are ${messageCount} items here:\n\n${messages.join('\n')}`;
-
-        const lastMessages = conversation.slice(-100).map(m => m.content).join('\n');
-        const summaryPrompt = `Summarize the following conversation in a concise paragraph:\n\n${lastMessages}`;
-        
-        const summary = await waitForTask(
-            { name: "Conversation Summarizer", personality: "You are a skilled conversation summarizer." },
-            [{ role: 'user', content: summaryPrompt }]
-        );
-
-        const finalMessage = `${message}\n\nRecent conversation summary:\n${summary}`;
-        console.log(`🔍 Examining room for ${avatar.name} in ${avatar.location.name}: ${finalMessage}`);
-
-        await postJSON(MESSAGES_API, {
-            message_id: 'default_id',
-            author: avatar,
-            content: finalMessage,
-            createdAt: new Date().toISOString(),
-            channelId: locations.find(loc => loc.name === avatar.location.name)?.id,
-            guildId: 'default_guild_id'
-        });
-
-        return finalMessage;
-    },
-    take_object: takeObject,
-    use_object: useObject,
-    leave_object: leaveObject,
-    create_object: async (avatar, data) => {
-        const [name, description] = data.split(',').map(cleanString);
-        if (!name || !description) {
-            throw new Error('Both name and description are required for creating an object.');
+    TAKE: async (avatar, itemName) => {
+        const item = findItem(avatar, itemName);
+        if (item) {
+            return await takeItem(avatar, itemName);
         }
-        return createObject({
-            name,
-            description,
-            location: avatar.location.name,
-            avatar: "https://i.imgur.com/Oly9eGA.png"
-        });
+        return `Item "${itemName}" not found.`;
+    },
+    USE: async (avatar, itemName) => {
+        const item = findItem(avatar, itemName);
+        if (item) {
+            return await useItem(avatar, itemName);
+        }
+        return `Item "${itemName}" not found.`;
+    },
+    DROP: async (avatar, itemName) => {
+        const item = findItem(avatar, itemName);
+        if (item) {
+            return await leaveItem(avatar, itemName);
+        }
+        return `Item "${itemName}" not found.`;
     }
 };
 
-export async function callTool(tool, avatar, conversation) {
-    console.log(`⚒️ Calling tool: ${tool} for avatar: ${avatar.name}`);
+function findLocation(name) {
+    return locations.find(loc => loc.name.toLowerCase() === name.toLowerCase());
+}
+
+function findItem(avatar, name) {
+    return getAvatarItems(avatar).find(o => o.name.toLowerCase() === name.toLowerCase());
+}
+
+export async function callTool(command, avatar, conversation) {
+    console.log(`⚒️ Calling command: ${command} for avatar: ${avatar.name}`);
 
     try {
-        const [toolName, ...args] = cleanString(tool).replace(')', '').split('(');
+        const [tool, ...params] = command.split(' ');
+        const toolName = tool.toUpperCase();
         const toolFunction = tools[toolName];
 
         if (!toolFunction) {
-            return `Tool ${toolName} not found. Available tools are: ${Object.keys(tools).join(', ')}`;
+            return `Tool "${toolName}" not found. Available tools are: ${Item.keys(tools).join(', ')}`;
         }
 
-        return await toolFunction(avatar, args.join('('), conversation);
-    } catch (error) {
-        const object = getAvatarObjects(avatar).find(o => o.name === tool);
-        if (object) {
-            return await useObject(avatar, tool, conversation);
+        const param = params.join(' ').replace(/["']/g, '').trim(); // Remove quotes and trim whitespace
+        if (!param) {
+            return `No parameter provided for tool "${toolName}".`;
         }
-        return `Error calling tool ${tool}: ${error.message}`;
+
+        return await toolFunction(avatar, param);
+    } catch (error) {
+        console.error(`Error calling command "${command}" for avatar "${avatar.name}":`, error);
+        return `Error calling command "${command}": ${error.message}`;
     }
 }
 
 export function getAvailableTools() {
-    return Object.keys(tools);
+    return Item.keys(tools);
 }

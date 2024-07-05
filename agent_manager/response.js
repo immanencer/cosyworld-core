@@ -2,7 +2,7 @@ import { ENQUEUE_API } from '../config.js';
 import { postJSON, retry } from './utils.js';
 import { waitForTask } from './task.js';
 import { callTool, getAvailableTools } from './tool.js';
-import { getAvatarObjects } from './item.js';
+import { getAvatarItems } from './item.js';
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // 1 second
@@ -14,8 +14,8 @@ export const postResponse = retry(async (avatar, response) => {
         data: {
             avatar: {
                 ...avatar,
-                channelId: avatar.location.parent || avatar.location.id,
-                threadId: avatar.location.parent ? avatar.location.id : null
+                channelId: avatar.location.type === 'thread' ? avatar.location.parent : avatar.location.id,
+                threadId: avatar.location.type === 'thread' ? avatar.location.id : null
             },
             message: response
         }
@@ -30,13 +30,13 @@ export async function handleResponse(avatar, conversation) {
 
         console.log(`🤖 Responding as ${avatar.name} in ${avatar.location.name}`);
 
-        const [objects, availableTools] = await Promise.all([
-            getAvatarObjects(avatar),
+        const [items, availableTools] = await Promise.all([
+            getAvatarItems(avatar),
             getAvailableTools()
         ]);
 
-        const toolResults = await handleTools(avatar, conversation, objects, availableTools);
-        const response = await generateResponse(avatar, conversation, objects, toolResults);
+        const toolResults = await handleTools(avatar, conversation, items, availableTools);
+        const response = await generateResponse(avatar, conversation, items, toolResults);
 
         if (response && response.trim() !== "") {
             await postResponse(avatar, response);
@@ -73,10 +73,10 @@ async function shouldRespond(avatar, conversation) {
     return shouldRespond;
 }
 
-async function handleTools(avatar, conversation, objects, availableTools) {
+async function handleTools(avatar, conversation, items, availableTools) {
     const recentConversation = conversation.slice(-5);
     const toolsPrompt = `
-You have the following objects: ${JSON.stringify(objects)}.
+You have the following items: ${JSON.stringify(items)}.
 Return a single relevant tool call from this list, be sure to modify the parameters:
 
 ${availableTools.map(tool => {
@@ -109,10 +109,10 @@ If no tool is relevant, return NONE.
     ));
 }
 
-async function generateResponse(avatar, conversation, objects, toolResults) {
+async function generateResponse(avatar, conversation, items, toolResults) {
     const recentConversation = conversation.slice(-25);
     const responsePrompt = `
-You have the following objects: ${JSON.stringify(objects)}.
+You have the following items: ${JSON.stringify(items)}.
 You have used the following tools: ${JSON.stringify(toolResults)}.
 `;
 
