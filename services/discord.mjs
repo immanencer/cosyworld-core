@@ -78,7 +78,7 @@ async function getOrCreateWebhook(channel) {
 }
 
 export async function getLocations() {
-    const channels = discordClient.channels;
+    const channels = discordClient.channels.cache;
     const channelTypes = {
         ThreadChannel: "thread",
         TextChannel: "channel",

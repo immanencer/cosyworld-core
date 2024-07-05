@@ -20,8 +20,6 @@ export async function processMessagesForAvatar(avatar) {
 
         if (locations.length === 0) throw new Error('No locations found');
 
-        await handleAvatarLocation(avatar, mentions, locations);
-
         const messages = await fetchMessages(avatar, locations);
 
         if (messages.length === 0) return;
@@ -32,28 +30,6 @@ export async function processMessagesForAvatar(avatar) {
         updateLastProcessedMessageId(avatar, mentions);
     } catch (error) {
         console.error(`Error processing messages for ${avatar.name}:`, error);
-    }
-}
-
-async function handleAvatarLocation(avatar, mentions, locations) {
-    if (!avatar || !avatar.location) avatar.location = locations[0];
-
-    const locationId = avatar.location.threadId || avatar.location.channelId ||  locations[0]?.id;
-    if (!locationId) throw new Error(`Invalid location for ${avatar.name}`);
-
-    avatar.location.id = locationId;
-
-    if (mentions.length > 0 && avatar.summon === "true") {
-        const lastMention = mentions[mentions.length - 1];
-        if (shouldMoveAvatar(avatar, lastMention)) {
-            const newLocation = findNewLocation(lastMention, locations);
-            if (newLocation && newLocation.id !== avatar.location.id) {
-                avatar.location = newLocation;
-                await updateAvatarLocation(avatar).catch(error =>
-                    console.error(`Failed to update avatar location for ${avatar.name}:`, error)
-                );
-            }
-        }
     }
 }
 

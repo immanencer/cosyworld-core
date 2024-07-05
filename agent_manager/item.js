@@ -1,6 +1,6 @@
 import { db } from '../database.mjs';
 import { cleanString } from './utils.js';
-import { waitForTask } from './task.js';
+import { waitForTask } from './ai.js';
 import { postResponse } from './response.js';
 
 export async function examineRoom(avatar) {

@@ -1,8 +1,11 @@
+import crypto from 'crypto';
+
 import { ENQUEUE_API } from '../config.js';
 import { postJSON, retry } from './utils.js';
-import { waitForTask } from './task.js';
+import { waitForTask } from './ai.js';
 import { callTool, getAvailableTools } from './tool.js';
 import { getAvatarItems } from './item.js';
+import { updateAvatarOnServer } from './avatar.js';
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // 1 second
@@ -23,10 +26,14 @@ export const postResponse = retry(async (avatar, response) => {
 }, MAX_RETRIES, RETRY_DELAY);
 
 export async function handleResponse(avatar, conversation) {
-    console.log(`🤖 Processing messages for ${avatar.name} in ${avatar.location.name}`);
     
     try {
-        if (!(await shouldRespond(avatar, conversation))) return;
+        if (!(await shouldRespond(avatar, conversation))) { 
+            console.log(`🤖 Skipping response for ${avatar.name} in ${avatar.location.name}`);
+            avatar.next_check = Date.now() + 5 * 60 * 1000; // 5 minutes in milliseconds
+            await updateAvatarOnServer(avatar);
+            return;
+        }
 
         console.log(`🤖 Responding as ${avatar.name} in ${avatar.location.name}`);
 
@@ -45,15 +52,40 @@ export async function handleResponse(avatar, conversation) {
         console.error(`Error in handleResponse for ${avatar.name}:`, error);
     }
 }
+const checkedConversations = new Map();
+
+const hashConversation = (conversation) => {
+    const hash = crypto.createHash('sha256');
+    hash.update(JSON.stringify(conversation));
+    return hash.digest('hex');
+};
+
+const isRecentCheck = (hash) => {
+    const entry = checkedConversations.get(hash);
+    if (!entry) return false;
+    const elapsedTime = Date.now() - entry.timestamp;
+    return elapsedTime < 5 * 60 * 1000; // 5 minutes in milliseconds
+};
+
+const updateCheckTimestamp = (hash) => {
+    checkedConversations.set(hash, { timestamp: Date.now() });
+};
 
 async function shouldRespond(avatar, conversation) {
     const recentConversation = conversation.slice(-10);
+    const conversationHash = hashConversation(recentConversation);
+
+    if (isRecentCheck(conversationHash)) {
+        return false;
+    }
+
     const haiku = await waitForTask(avatar, [
         ...recentConversation,
         { role: 'user', content: 'Write a haiku to decide if you should respond.' }
     ]);
 
-    console.log(`Haiku from ${avatar.name}:\n${haiku}`);
+    // pretty prent the haiku, indendted
+    console.log(`📜 Haiku from ${avatar.name}:\n${haiku.split('\n').map(line => `    ${line}`).join('\n')}`);
 
     const haikuCheck = await waitForTask({ personality: 'You are an excellent judge of intention' }, [
         { role: 'user', content: `
@@ -70,6 +102,9 @@ async function shouldRespond(avatar, conversation) {
 
     const shouldRespond = haikuCheck && haikuCheck.toLowerCase().includes('yes');
     console.log(`Haiku check for ${avatar.name}: ${shouldRespond ? 'Passed' : 'Failed'}`);
+
+    updateCheckTimestamp(conversationHash);
+
     return shouldRespond;
 }
 
@@ -87,10 +122,12 @@ ${availableTools.map(tool => {
 If no tool is relevant, return NONE.
 `;
 
+    console.log(`🛠️ Tool prompt for ${avatar.name}:\n${toolsPrompt}`);
+
     const toolsCheck = await waitForTask(
         { personality: "You are a precise tool selector. Respond only with a tool call or NONE." },
         [
-            { role: 'assistant', content: 'recall_conversation("5")' },
+            { role: 'assistant', content: 'RECALL 5' },
             ...recentConversation,
             { role: 'user', content: toolsPrompt }
         ]

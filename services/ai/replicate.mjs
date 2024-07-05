@@ -10,18 +10,17 @@ export default class ReplicateService {
         const userMessages = messages.map(msg => msg.content).join('\n');
         const requestBody = {
             input: {
-                top_k: 0,
-                top_p: 0.9,
                 prompt: userMessages,
                 max_tokens: 512,
-                min_tokens: 0,
-                temperature: 0.6,
-                system_prompt: systemPrompt,
-                length_penalty: 1,
+                temperature: 0.7, // Slightly increased for more creative responses
+                top_p: 0.9, // High probability mass to consider for sampling
+                top_k: 50, // Adding top_k for better quality control
+                presence_penalty: 1.2, // Increased slightly to encourage novel tokens
+                frequency_penalty: 0.5, // Added to reduce repetition
+                log_performance_metrics: false,
+                length_penalty: 1, // Adjust based on desired verbosity
                 stop_sequences: "<|end_of_text|>,<|eot_id|>",
-                prompt_template: "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n" + systemPrompt + "<|eot_id|><|start_header_id|>user<|end_header_id|>\n\n{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n",
-                presence_penalty: 1.15,
-                log_performance_metrics: false
+                prompt_template: "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n" + systemPrompt + "<|eot_id|><|start_header_id|>user<|end_header_id|>\n\n{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n"
             }
         };
 

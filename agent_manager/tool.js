@@ -1,7 +1,5 @@
-import { MESSAGES_API } from '../config.js';
-import { cleanString, postJSON } from './utils.js';
 import { updateAvatarLocation, getLocations } from './avatar.js';
-import { takeItem, useItem, leaveItem, getAvatarItems } from './item.js';
+import { takeItem, useItem, leaveItem, getAvatarItems, getItemsForLocation } from './item.js';
 
 let locations = [];
 
@@ -17,7 +15,13 @@ const tools = {
         if (newLocation) {
             avatar.location = newLocation;
             await updateAvatarLocation(avatar);
-            return `Moved to ${newLocation.name}.`;
+            // get the items in this location
+            const items = await getItemsForLocation(newLocation.name);
+            return `Moved to ${newLocation.name}.\n\n${
+                items.length > 0
+                    ? `Items in this location: ${items.map(i => i.name).join(', ')}`
+                    : 'No items in this location.'
+            }`;
         }
         return `Location "${locationName}" not found.`;
     },
@@ -61,7 +65,7 @@ export async function callTool(command, avatar, conversation) {
         const toolFunction = tools[toolName];
 
         if (!toolFunction) {
-            return `Tool "${toolName}" not found. Available tools are: ${Item.keys(tools).join(', ')}`;
+            return `Tool "${toolName}" not found. Available tools are: ${Object.keys(tools).join(', ')}`;
         }
 
         const param = params.join(' ').replace(/["']/g, '').trim(); // Remove quotes and trim whitespace
@@ -77,5 +81,5 @@ export async function callTool(command, avatar, conversation) {
 }
 
 export function getAvailableTools() {
-    return Item.keys(tools);
+    return Object.keys(tools);
 }

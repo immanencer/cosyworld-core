@@ -57,7 +57,7 @@ export const updateAvatarLocation = async (avatar) => {
 const updateRememberedLocations = ({ remember, location }) => 
     [...new Set([...remember, location.name])].slice(-5);
 
-const updateAvatarOnServer = async (avatar) => {
+export const updateAvatarOnServer = async (avatar) => {
     if (!avatar || !avatar._id) {
         throw new Error('Invalid avatar object');
     }

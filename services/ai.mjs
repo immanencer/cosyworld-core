@@ -1,4 +1,4 @@
-import ReplicateService from './ai/replicate-service.mjs';
+import ReplicateService from './ai/replicate.mjs';
 
 class AI {
     constructor(model) {
@@ -29,7 +29,6 @@ class AI {
     }
 
     async generateResponse(systemPrompt, messages) {
-        console.log('🤖 AI:', systemPrompt, messages.join('').length);
         return await this.service.chat({ systemPrompt, messages: messages });
     }
 }

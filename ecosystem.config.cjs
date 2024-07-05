@@ -6,8 +6,8 @@ module.exports = {
       "script": "./server/index.mjs"
     },
     {
-      "name": "ai",
-      "script": "./services/intelligence-processor.mjs"
+      "name": "intellect",
+      "script": "./services/intellect.mjs"
     },
     {
       "name": "agents",

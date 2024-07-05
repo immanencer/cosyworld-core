@@ -1,6 +1,6 @@
 import { Client, GatewayIntentBits, Events } from 'discord.js';
 import { db } from '../database.mjs';
-import ReplicateService from './ai/replicate-service.mjs';
+import ReplicateService from './ai/replicate.mjs';
 
 // Constants
 const MESSAGES_COLLECTION = 'messages';
