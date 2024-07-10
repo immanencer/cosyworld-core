@@ -99,11 +99,27 @@ async function moveToLocation(avatar, locationName, locations) {
     console.log(message);
     return message;
 }
+
+async function readChannel(avatar, channelName) {
+    console.log(`📖 ${avatar.name} attempting to read channel "${channelName}"...`);
+    const location = avatar.location;
+    if (location.name.toLowerCase() !== channelName.toLowerCase()) {
+        const message = `You are not in the channel "${channelName}".`;
+        console.log(message);
+        return message;
+    }
+    const items = await getItemsForLocation(location.name);
+    const message = items.length > 0 ? `Items in this location: ${items.map(i => i.name).join(', ')}` : 'No items in this location.';
+    console.log(message);
+    return message;
+}
+
 const tools = {
     MOVE: moveToLocation,
     TAKE: takeItem,
     USE: useItem,
-    DROP: leaveItem
+    DROP: leaveItem,
+    READ: readChannel
 };
 
 export async function callTool(command, avatar, locations) {

@@ -20,6 +20,13 @@ export async function processMessagesForAvatar(avatar) {
 
         if (locations.length === 0) throw new Error('No locations found');
 
+        if (mentions.length > 0) {
+            if (shouldMoveAvatar(avatar, mentions[mentions.length - 1])) {
+                const newLocation = findNewLocation(mentions[mentions.length - 1], locations);
+                await updateAvatarLocation(avatar, newLocation);
+            }
+        }
+
         const messages = await fetchMessages(avatar, locations);
 
         if (messages.length === 0) return;
@@ -34,6 +41,7 @@ export async function processMessagesForAvatar(avatar) {
 }
 
 const shouldMoveAvatar = (avatar, lastMention) =>
+    avatar.summon === 'true' &&
     avatar.location.id !== lastMention.channelId &&
     avatar.location.id !== lastMention.threadId &&
     (avatar.owner === 'host' || avatar.owner === lastMention.author);
