@@ -26,11 +26,14 @@ export const postResponse = retry(async (avatar, response) => {
 
 export async function handleResponse(avatar, conversation) {
     try {
-        if (!(await shouldRespond(avatar, conversation))) { 
-            console.log(`🤖 Skipping response for ${avatar.name} in ${avatar.location.name}`);
-            avatar.next_check = Date.now() + 5 * 60 * 1000; // 5 minutes in milliseconds
-            await updateAvatarOnServer(avatar);
-            return;
+
+        if (!avatar.force && conversation[conversation.length - 1].isBot === true) {
+            if (!(await shouldRespond(avatar, conversation))) { 
+                console.log(`🤖 Skipping response for ${avatar.name} in ${avatar.location.name}`);
+                avatar.next_check = Date.now() + 5 * 60 * 1000; // 5 minutes in milliseconds
+                await updateAvatarOnServer(avatar);
+                return;
+            }
         }
 
         console.log(`🤖 Responding as ${avatar.name} in ${avatar.location.name}`);
