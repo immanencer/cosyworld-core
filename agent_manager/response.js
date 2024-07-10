@@ -27,6 +27,11 @@ export const postResponse = retry(async (avatar, response) => {
 export async function handleResponse(avatar, conversation) {
     try {
 
+        if (conversation[conversation.length - 1].author === avatar.name) {
+            console.log(`🤖 Skipping response for ${avatar.name} in ${avatar.location.name} because the last message was from the avatar.`)
+            return;
+        }
+
         if (!avatar.force && conversation[conversation.length - 1].isBot === true) {
             if (!(await shouldRespond(avatar, conversation))) { 
                 console.log(`🤖 Skipping response for ${avatar.name} in ${avatar.location.name}`);
