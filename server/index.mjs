@@ -15,7 +15,7 @@ app.use('/ai', ai);
 // Custom API routes
 
 import avatars from './routes/avatars.mjs';
-app.use('/avatars', avatars);
+app.use('/api/avatars', avatars);
 
 import statistics from './routes/statistics.mjs';
 app.use('/statistics', statistics);

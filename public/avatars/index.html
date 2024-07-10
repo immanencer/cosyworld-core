@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avatar Management</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+        .avatar-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+        }
+        .avatar-card, .create-card {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+            overflow: hidden;
+            position: relative;
+            transition: transform 0.3s ease;
+        }
+        .avatar-card:hover, .create-card:hover {
+            transform: translateY(-5px);
+        }
+        .avatar-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+        .avatar-content {
+            padding: 20px;
+        }
+        .avatar-name {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        .avatar-location {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 12px;
+        }
+        .avatar-personality {
+            font-size: 0.85em;
+            color: #444;
+            height: 60px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+        }
+        .avatar-watermark {
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            opacity: 0.1;
+            pointer-events: none;
+        }
+        .create-card {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            height: 400px;
+        }
+        .create-icon {
+            font-size: 48px;
+            color: #4CAF50;
+            margin-bottom: 10px;
+        }
+        .create-text {
+            font-size: 1.2em;
+            color: #4CAF50;
+        }
+        .hidden {
+            display: none;
+        }
+        .input-field {
+            width: calc(100% - 20px);
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .save-button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: calc(100% - 20px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Avatar Management</h1>
+        <div class="avatar-grid" id="avatarGrid"></div>
+    </div>
+
+    <script>
+        // Fetch avatars data with error handling and logging
+        async function fetchAvatarsData() {
+            try {
+                const response = await fetch('/api/avatars');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                console.log('Avatars data fetched successfully:', data);
+                return data;
+            } catch (error) {
+                console.error('Failed to fetch avatars data:', error);
+                return []; // Return an empty array on failure to avoid breaking display logic
+            }
+        }
+
+        // Function to generate a simple hash for the watermark
+        function simpleHash(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash; // Convert to 32-bit integer
+            }
+            return Math.abs(hash).toString(16).substring(0, 6); // Get 6-character hex code
+        }
+
+        // Function to create avatar card
+        function createAvatarCard(avatar) {
+            const card = document.createElement('div');
+            card.className = 'avatar-card';
+            const watermarkColor = `#${simpleHash(avatar.personality)}`;
+            card.innerHTML = `
+                <img src="${avatar.avatar}" alt="${avatar.name}" class="avatar-image">
+                <div class="avatar-content">
+                    <div class="avatar-name">${avatar.emoji} ${avatar.name}</div>
+                    <div class="avatar-location">${avatar.location}</div>
+                    <div class="avatar-personality">${avatar.personality.substring(0, 100)}...</div>
+                </div>
+                <div class="avatar-watermark" style="background-color: ${watermarkColor}"></div>
+            `;
+            return card;
+        }
+
+        // Function to create blank card for new avatar
+        function createBlankCard() {
+            const card = document.createElement('div');
+            card.className = 'create-card';
+            card.innerHTML = `
+                <div class="create-content">
+                    <div class="create-icon">+</div>
+                    <div class="create-text">Create New Avatar</div>
+                </div>
+                <div class="create-form hidden">
+                    <input type="text" class="input-field" placeholder="Emoji">
+                    <input type="text" class="input-field" placeholder="Name">
+                    <input type="text" class="input-field" placeholder="Avatar URL">
+                    <input type="text" class="input-field" placeholder="Location">
+                    <textarea class="input-field" placeholder="Personality" rows="3"></textarea>
+                    <button class="save-button">Save Avatar</button>
+                </div>
+            `;
+            card.querySelector('.create-content').addEventListener('click', () => {
+                card.querySelector('.create-content').classList.add('hidden');
+                card.querySelector('.create-form').classList.remove('hidden');
+            });
+            card.querySelector('.save-button').addEventListener('click', async () => {
+                const newAvatar = {
+                    emoji: card.querySelector('input[placeholder="Emoji"]').value,
+                    name: card.querySelector('input[placeholder="Name"]').value,
+                    avatar: card.querySelector('input[placeholder="Avatar URL"]').value,
+                    location: card.querySelector('input[placeholder="Location"]').value,
+                    personality: card.querySelector('textarea[placeholder="Personality"]').value
+                };
+                try {
+                    const response = await fetch('/api/avatars', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(newAvatar),
+                    });
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    console.log('New avatar created successfully');
+                    displayAvatars(); // Refresh the avatar list
+                } catch (error) {
+                    console.error('Failed to create new avatar:', error);
+                }
+                card.querySelector('.create-form').classList.add('hidden');
+                card.querySelector('.create-content').classList.remove('hidden');
+            });
+            return card;
+        }
+
+        // Function to display avatars with logging
+        async function displayAvatars() {
+            try {
+                const avatarsData = await fetchAvatarsData();
+                const avatarGrid = document.getElementById('avatarGrid');
+                avatarGrid.innerHTML = '';
+                avatarGrid.appendChild(createBlankCard());
+                avatarsData.forEach(avatar => {
+                    avatarGrid.appendChild(createAvatarCard(avatar));
+                });
+                console.log('Avatars displayed successfully.');
+            } catch (error) {
+                console.error('Failed to display avatars:', error);
+            }
+        }
+
+        // Initial display of avatars
+        displayAvatars();
+    </script>
+</body>
+</html>
