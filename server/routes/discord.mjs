@@ -36,16 +36,12 @@ router.get('/messages', async (req, res) => {
     if (location) {
         query.channelId = location;
     }
-
-    console.log('Query:', query); // Debugging line to log the query being executed
-
     try {
         const messages = await db.collection(MESSAGES_COLLECTION)
             .find(query)
             .sort({ createdAt: -1 })
             .limit(100)
             .toArray();
-        console.log('Messages found:', messages.length); // Debugging line to log the number of messages found
         res.status(200).send(messages);
     } catch (error) {
         handleDatabaseError(res, error, 'fetch messages');

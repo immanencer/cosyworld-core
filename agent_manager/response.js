@@ -27,18 +27,16 @@ export const postResponse = retry(async (avatar, response) => {
 export async function handleResponse(avatar, conversation) {
     try {
 
-        if (conversation[conversation.length - 1].author === avatar.name) {
+        if (conversation[conversation.length - 1].content.toLowerCase().trim().startsWith(`(${avatar.location.name}) ${avatar.name}:`.toLowerCase())) {
             console.log(`🤖 Skipping response for ${avatar.name} in ${avatar.location.name} because the last message was from the avatar.`)
             return;
         }
 
-        if (!avatar.force && conversation[conversation.length - 1].isBot === true) {
-            if (!(await shouldRespond(avatar, conversation))) { 
-                console.log(`🤖 Skipping response for ${avatar.name} in ${avatar.location.name}`);
-                avatar.next_check = Date.now() + 5 * 60 * 1000; // 5 minutes in milliseconds
-                await updateAvatarOnServer(avatar);
-                return;
-            }
+        if (!(await shouldRespond(avatar, conversation))) { 
+            console.log(`🤖 Skipping response for ${avatar.name} in ${avatar.location.name}`);
+            avatar.next_check = Date.now() + 5 * 60 * 1000; // 5 minutes in milliseconds
+            await updateAvatarOnServer(avatar);
+            return;
         }
 
         console.log(`🤖 Responding as ${avatar.name} in ${avatar.location.name}`);
@@ -86,6 +84,11 @@ async function shouldRespond(avatar, conversation) {
         return false;
     }
 
+    if (avatar.force) {
+        // in force state only respond to human messages
+        return !conversation[conversation.length - 1].isBot;
+    }
+
     const haiku = await waitForTask(avatar, [
         ...recentConversation,
         { role: 'user', content: 'Write a haiku to decide if you should respond.' }
@@ -123,24 +126,17 @@ ${items.map(T => T.name).join('\n')}.
 
 You can perform these functions:
 
-SEARCH
-MOVE some-location
-TAKE Some Item
-DROP Some Item
+${availableTools.join('\n')}.
 
-
-Respond with the tool call for each function you want to use.
-separate each tool call with a new line.
-To use an item respond with the item name and describe what you do with it.
-If no tool is relevant, return NONE.
+Respond with the action you want to use, one per line, with relevant parameters.
+If no action is relevant, return NONE.
 `;
 
     console.log(`🛠️ Tool prompt for ${avatar.name}:\n${toolsPrompt}`);
 
     const toolsCheck = await waitForTask(
-        { personality: "You are a precise tool selector. Respond only with a tool call or NONE." },
+        { personality: "You are a precise executive function. Respond only with a action or NONE." },
         [
-            { role: 'assistant', content: 'RECALL 5' },
             ...recentConversation,
             { role: 'user', content: toolsPrompt }
         ]

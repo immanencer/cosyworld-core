@@ -82,24 +82,25 @@ export async function getAvatarItems(avatar) {
     return await db.collection('items').find({ takenBy: avatar.name }).toArray();
 }
 
-const tools = {
-    MOVE: async (avatar, locationName, locations) => {
-        console.log(`🚶 ${avatar.name} attempting to move to location "${locationName}"...`);
-        const newLocation = locations.find(loc => loc.name.toLowerCase() === locationName.toLowerCase());
-        if (newLocation) {
-            avatar.location = newLocation;
-            await updateAvatarLocation(avatar);
-            const items = await getItemsForLocation(newLocation.name);
-            const message = `Moved to ${newLocation.name}.\n\n${
-                items.length > 0 ? `Items in this location: ${items.map(i => i.name).join(', ')}` : 'No items in this location.'
-            }`;
-            console.log(message);
-            return message;
-        }
-        const message = `Location "${locationName}" not found.`;
+async function moveToLocation(avatar, locationName, locations) {
+    console.log(`🚶 ${avatar.name} attempting to move to location "${locationName}"...`);
+    const newLocation = locations.find(loc => loc.name.toLowerCase() === locationName.toLowerCase());
+    if (newLocation) {
+        avatar.location = newLocation;
+        await updateAvatarLocation(avatar);
+        const items = await getItemsForLocation(newLocation.name);
+        const message = `Moved to ${newLocation.name}.\n\n${
+            items.length > 0 ? `Items in this location: ${items.map(i => i.name).join(', ')}` : 'No items in this location.'
+        }`;
         console.log(message);
         return message;
-    },
+    }
+    const message = `Location "${locationName}" not found.`;
+    console.log(message);
+    return message;
+}
+const tools = {
+    MOVE: moveToLocation,
     TAKE: takeItem,
     USE: useItem,
     DROP: leaveItem
