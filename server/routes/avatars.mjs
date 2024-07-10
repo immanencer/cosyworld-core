@@ -6,17 +6,6 @@ import { ObjectId } from 'mongodb';
 const router = express.Router();
 const collectionName = 'avatars';
 
-// Route to create a new avatar
-router.post('/', async (req, res) => {
-    const avatarData = req.body;
-    try {
-        const result = await db.collection(collectionName).insertOne(avatarData);
-        res.status(201).send({ message: 'Avatar created successfully', id: result.insertedId });
-    } catch (error) {
-        console.error('🎮 ❌ Failed to create avatar:', error);
-        res.status(500).send({ error: 'Failed to create avatar' });
-    }
-});
 
 // Route to get all avatars
 router.get(`/`, async (req, res) => {
@@ -28,8 +17,20 @@ router.get(`/`, async (req, res) => {
         res.status(500).send({ error: 'Failed to fetch avatars' });
     }
 });
+
+// Route to create a new avatar
+router.post('/', async (req, res) => {
+    const avatarData = req.body;
+    try {
+        const result = await db.collection(collectionName).insertOne(avatarData);
+        res.status(201).send({ message: 'Avatar created successfully', id: result.insertedId });
+    } catch (error) {
+        console.error('🎮 ❌ Failed to create avatar:', error);
+        res.status(500).send({ error: 'Failed to create avatar' });
+    }
+});
 // Route to get a avatar by ID
-router.get(`/id`, async (req, res) => {
+router.get(`/:id`, async (req, res) => {
     const { id } = req.params;
     if (!id) {
         return res.status(400).send({ error: 'ID is required to fetch the avatar' });
@@ -49,7 +50,7 @@ router.get(`/id`, async (req, res) => {
 
 
 // Route to update a avatar (PATCH)
-router.patch(`/pdate/:id`, async (req, res) => {
+router.patch(`/:id`, async (req, res) => {
     const { id } = req.params;
     const updateData = req.body;
 
