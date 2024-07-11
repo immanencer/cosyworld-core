@@ -29,7 +29,7 @@ export const initializeAvatars = async () => {
 
 const initializeAvatar = (avatar, locations) => ({
     ...avatar,
-    location: locations.find(loc => loc.name === avatar.location) || locations[0],
+    location: locations.find(loc => loc.channelName === avatar.location) || locations[0],
     messageCache: [],
     lastProcessedMessageId: null,
     remember: [...new Set([...(avatar.remember || []), avatar.location])]
