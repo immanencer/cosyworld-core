@@ -42,8 +42,8 @@ export async function processMessagesForAvatar(avatar) {
 
 const shouldMoveAvatar = (avatar, lastMention) =>
     avatar.summon === 'true' &&
-    avatar.location.id !== lastMention.channelId &&
-    avatar.location.id !== lastMention.threadId &&
+    avatar.location.channelId !== lastMention.channelId &&
+    avatar.location.channelId !== lastMention.threadId &&
     (avatar.owner === 'host' || avatar.owner === lastMention.author);
 
 const findNewLocation = (lastMention, locations) =>
@@ -52,9 +52,9 @@ const findNewLocation = (lastMention, locations) =>
     locations[0];
 
 async function fetchMessages(avatar, locations) {
-    const rememberedLocations = new Set([...(avatar.remember || []), avatar.location.name]);
+    const rememberedLocations = new Set([...(avatar.remember || []), avatar.location.channelName]);
     const messagePromises = Array.from(rememberedLocations).map(locationName => {
-        const locationId = locations.find(loc => loc.name === locationName)?.id;
+        const locationId = locations.find(loc => loc.name === locationName)?.channelId;
         return locationId ? getMessages(locationId) : Promise.resolve([]);
     });
 

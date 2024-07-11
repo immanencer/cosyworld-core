@@ -42,7 +42,7 @@ export const updateAvatarLocation = async (avatar) => {
         return;
     }
 
-    console.log(`${avatar.emoji} ${avatar.name} is now in ${avatar.location.name}.`);
+    console.log(`${avatar.emoji} ${avatar.name} is now in ${avatar.location.channelName}.`);
     
     avatar.remember = updateRememberedLocations(avatar);
     console.log(avatar.remember);
@@ -55,7 +55,7 @@ export const updateAvatarLocation = async (avatar) => {
 };
 
 const updateRememberedLocations = ({ remember, location }) => 
-    [...new Set([...remember, location.name])].slice(-5);
+    [...new Set([...remember, location.channelName])].slice(-5);
 
 export const updateAvatarOnServer = async (avatar) => {
     if (!avatar || !avatar._id) {

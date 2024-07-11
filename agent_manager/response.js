@@ -16,8 +16,8 @@ export const postResponse = retry(async (avatar, response) => {
         data: {
             avatar: {
                 ...avatar,
-                channelId: avatar.location.type === 'thread' ? avatar.location.parent : avatar.location.id,
-                threadId: avatar.location.type === 'thread' ? avatar.location.id : null
+                channelId: avatar.location.type === 'thread' ? avatar.location.parent : avatar.location.channelId,
+                threadId: avatar.location.type === 'thread' ? avatar.location.channelId : null
             },
             message: response
         }
@@ -27,19 +27,19 @@ export const postResponse = retry(async (avatar, response) => {
 export async function handleResponse(avatar, conversation) {
     try {
 
-        if (conversation[conversation.length - 1].content.toLowerCase().trim().startsWith(`(${avatar.location.name}) ${avatar.name}:`.toLowerCase())) {
-            console.log(`🤖 Skipping response for ${avatar.name} in ${avatar.location.name} because the last message was from the avatar.`)
+        if (conversation[conversation.length - 1].content.toLowerCase().trim().startsWith(`(${avatar.location.channelName}) ${avatar.name}:`.toLowerCase())) {
+            console.log(`🤖 Skipping response for ${avatar.name} in ${avatar.location.channelName} because the last message was from the avatar.`)
             return;
         }
 
         if (!(await shouldRespond(avatar, conversation))) { 
-            console.log(`🤖 Skipping response for ${avatar.name} in ${avatar.location.name}`);
+            console.log(`🤖 Skipping response for ${avatar.name} in ${avatar.location.channelName}`);
             avatar.next_check = Date.now() + 5 * 60 * 1000; // 5 minutes in milliseconds
             await updateAvatarOnServer(avatar);
             return;
         }
 
-        console.log(`🤖 Responding as ${avatar.name} in ${avatar.location.name}`);
+        console.log(`🤖 Responding as ${avatar.name} in ${avatar.location.channelName}`);
 
         const [items, availableTools] = await Promise.all([
             getAvatarItems(avatar),

@@ -88,8 +88,8 @@ async function moveToLocation(avatar, locationName, locations) {
     if (newLocation) {
         avatar.location = newLocation;
         await updateAvatarLocation(avatar);
-        const items = await getItemsForLocation(newLocation.name);
-        const message = `Moved to ${newLocation.name}.\n\n${
+        const items = await getItemsForLocation(newlocation.channelName);
+        const message = `Moved to ${newlocation.channelName}.\n\n${
             items.length > 0 ? `Items in this location: ${items.map(i => i.name).join(', ')}` : 'No items in this location.'
         }`;
         console.log(message);
@@ -103,12 +103,12 @@ async function moveToLocation(avatar, locationName, locations) {
 async function readChannel(avatar, channelName) {
     console.log(`📖 ${avatar.name} attempting to read channel "${channelName}"...`);
     const location = avatar.location;
-    if (location.name.toLowerCase() !== channelName.toLowerCase()) {
+    if (location.channelName.toLowerCase() !== channelName.toLowerCase()) {
         const message = `You are not in the channel "${channelName}".`;
         console.log(message);
         return message;
     }
-    const items = await getItemsForLocation(location.name);
+    const items = await getItemsForLocation(location.channelName);
     const message = items.length > 0 ? `Items in this location: ${items.map(i => i.name).join(', ')}` : 'No items in this location.';
     console.log(message);
     return message;

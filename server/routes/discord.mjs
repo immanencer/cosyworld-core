@@ -1,24 +1,20 @@
+// router.mjs
 import express from 'express';
 import { ObjectId } from 'mongodb';
 import { db } from '../../database.mjs';
-import { initializeDiscordClient, sendMessage, sendAsAvatar, getLocations, isDiscordReady } from '../../services/discord.mjs';
-
-await initializeDiscordClient();
 
 const router = express.Router();
-const REQUESTS_COLLECTION = 'requests';
+const TASKS_COLLECTION = 'tasks';
 const MESSAGES_COLLECTION = 'messages';
+const LOCATIONS_COLLECTION = 'locations';
 
-// Middleware
 router.use(express.json());
 
-// Helper function to handle database errors
 const handleDatabaseError = (res, error, operation) => {
     console.error(`Failed to ${operation}:`, error);
     res.status(500).send({ error: `Failed to ${operation}` });
 };
 
-// API Routes
 router.get('/messages', async (req, res) => {
     const { since, location } = req.query;
     const query = {};
@@ -28,7 +24,6 @@ router.get('/messages', async (req, res) => {
         if (!isNaN(sinceDate.getTime())) {
             query.createdAt = { $gt: sinceDate };
         } else {
-            console.log('Invalid date format for "since" parameter:', since);
             return res.status(400).send({ error: 'Invalid date format for "since" parameter' });
         }
     }
@@ -36,6 +31,7 @@ router.get('/messages', async (req, res) => {
     if (location) {
         query.channelId = location;
     }
+
     try {
         const messages = await db.collection(MESSAGES_COLLECTION)
             .find(query)
@@ -91,13 +87,9 @@ router.get('/messages/mention', async (req, res) => {
 });
 
 router.get('/locations', async (req, res) => {
-    if (!isDiscordReady()) {
-        return res.status(503).send({ error: 'Discord client not ready' });
-    }
-
     try {
-        const locations = await getLocations();
-        res.status(200).send(locations);
+        const locations = await db.collection(LOCATIONS_COLLECTION).find().toArray();
+        res.status(200).send(locations.map);
     } catch (error) {
         handleDatabaseError(res, error, 'fetch locations');
     }
@@ -105,80 +97,14 @@ router.get('/locations', async (req, res) => {
 
 router.post('/enqueue', async (req, res) => {
     const { action, data } = req.body;
-    const request = { action, data, status: 'queued', createdAt: new Date() };
+    const task = { action, data, status: 'pending', createdAt: new Date() };
 
     try {
-        await db.collection(REQUESTS_COLLECTION).insertOne(request);
-        res.status(200).send({ message: 'Request enqueued' });
+        await db.collection(TASKS_COLLECTION).insertOne(task);
+        res.status(200).send({ message: 'Task enqueued' });
     } catch (error) {
-        handleDatabaseError(res, error, 'enqueue request');
+        handleDatabaseError(res, error, 'enqueue task');
     }
 });
-
-router.get('/process', async (req, res) => {
-    if (!isDiscordReady() || !db) {
-        return res.status(503).send({ error: 'Service not ready' });
-    }
-
-    try {
-        const request = await db.collection(REQUESTS_COLLECTION).findOneAndUpdate(
-            { status: 'queued' },
-            { $set: { status: 'processing', startedAt: new Date() } },
-            { sort: { createdAt: 1 }, returnDocument: 'after' }
-        );
-
-        if (!request) {
-            return res.status(200).send({ message: 'No queued requests' });
-        }
-
-        await processRequest(request.action, request.data);
-        await db.collection(REQUESTS_COLLECTION).updateOne(
-            { _id: request._id },
-            { $set: { status: 'completed', completedAt: new Date() } }
-        );
-
-        res.status(200).send({ message: 'Request processed' });
-    } catch (error) {
-        handleDatabaseError(res, error, 'process request');
-    }
-});
-
-const processRequest = async (action, data) => {
-    if (!isDiscordReady() || !db) {
-        throw new Error('Service not ready');
-    }
-
-    const actions = {
-        sendMessage: () => sendMessage(data.channelId, data.message, data.threadId),
-        sendAsAvatar: () => {
-            if (!data.avatar || !data.message) {
-                throw new Error('Missing avatar data or message');
-            }
-            return sendAsAvatar(data.avatar, data.message);
-        }
-    };
-
-    const selectedAction = actions[action];
-    if (!selectedAction) {
-        throw new Error(`Unknown action: ${action}`);
-    }
-
-    await selectedAction();
-};
-
-const PORT = process.env.PORT || 3000;
-
-setInterval(async () => {
-    if (!isDiscordReady() || !db) {
-        console.log('🎮 Services not ready');
-        return;
-    }
-
-    try {
-        await fetch(`http://localhost:${PORT}/discord/process`);
-    } catch (error) {
-        console.error('🎮 ❌ Failed to process:', error);
-    }
-}, process.env.PROCESS_INTERVAL || 5000);
 
 export default router;
