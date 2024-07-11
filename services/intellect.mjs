@@ -8,7 +8,9 @@ let logged = false;
 async function process_next_task() {
     // get the next task from the queue
     const task = await collection.findOneAndUpdate(
-        { status: 'pending' },
+        { status: 'pending'
+        , system_prompt: {$exists: true}
+        , messages: {$exists: true} },
         { $set: { status: 'processing' } }
     );
     

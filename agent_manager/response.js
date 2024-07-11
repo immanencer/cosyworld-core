@@ -24,7 +24,7 @@ export const postResponse = retry(async (avatar, response) => {
     });
 }, MAX_RETRIES, RETRY_DELAY);
 
-export async function handleResponse(avatar, conversation) {
+export async function handleResponse(avatar, conversation, locations) {
     try {
 
         if (conversation[conversation.length - 1].content.toLowerCase().trim().startsWith(`(${avatar.location.channelName}) ${avatar.name}:`.toLowerCase())) {
@@ -32,7 +32,7 @@ export async function handleResponse(avatar, conversation) {
             return;
         }
 
-        if (!(await shouldRespond(avatar, conversation))) { 
+        if (!(await shouldRespond(avatar, conversation, locations))) { 
             console.log(`🤖 Skipping response for ${avatar.name} in ${avatar.location.channelName}`);
             avatar.next_check = Date.now() + 5 * 60 * 1000; // 5 minutes in milliseconds
             await updateAvatarOnServer(avatar);
@@ -46,8 +46,8 @@ export async function handleResponse(avatar, conversation) {
             getAvailableTools()
         ]);
 
-        const toolResults = await handleTools(avatar, conversation, items, availableTools);
-        const response = await generateResponse(avatar, conversation, items, toolResults);
+        const toolResults = await handleTools(avatar, conversation, items, availableTools, locations);
+        const response = await generateResponse(avatar, conversation, items, toolResults, locations);
 
         if (response && response.trim() !== "") {
             await postResponse(avatar, response);
@@ -76,7 +76,7 @@ const updateCheckTimestamp = (hash) => {
     checkedConversations.set(hash, { timestamp: Date.now() });
 };
 
-async function shouldRespond(avatar, conversation) {
+async function shouldRespond(avatar, conversation, locations) {
     const recentConversation = conversation.slice(-10);
     const conversationHash = hashConversation(recentConversation);
 
@@ -117,7 +117,7 @@ async function shouldRespond(avatar, conversation) {
     return shouldRespond;
 }
 
-async function handleTools(avatar, conversation, items, availableTools) {
+async function handleTools(avatar, conversation, items, availableTools, locations) {
     const recentConversation = conversation.slice(-5);
     const toolsPrompt = `
 You have these items:
@@ -148,14 +148,14 @@ If no action is relevant, return NONE.
 
     const toolsToCall = toolsCheck.split('\n').filter(tool => tool.trim());
     return Promise.all(toolsToCall.map(tool => 
-        callTool(tool, avatar, recentConversation).catch(error => {
+        callTool(tool, avatar, recentConversation, locations).catch(error => {
             console.error(`Error calling tool ${tool}:`, error);
             return `Error: ${error.message}`;
         })
     ));
 }
 
-async function generateResponse(avatar, conversation, items, toolResults) {
+async function generateResponse(avatar, conversation, items, toolResults, locations) {
     const recentConversation = conversation.slice(-25);
     const responsePrompt = `
 You have the following items: ${JSON.stringify(items)}.

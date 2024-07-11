@@ -84,7 +84,7 @@ export async function getAvatarItems(avatar) {
 
 async function moveToLocation(avatar, locationName, locations) {
     console.log(`🚶 ${avatar.name} attempting to move to location "${locationName}"...`);
-    const newLocation = locations.find(loc => loc.name.toLowerCase() === locationName.toLowerCase());
+    const newLocation = locations.find(loc => loc.channelName.toLowerCase() === locationName.toLowerCase());
     if (newLocation) {
         avatar.location = newLocation;
         await updateAvatarLocation(avatar);
@@ -122,7 +122,7 @@ const tools = {
     READ: readChannel
 };
 
-export async function callTool(command, avatar, locations) {
+export async function callTool(command, avatar, messages, locations) {
     console.log(`⚒️ Calling command: "${command}" for avatar: "${avatar.name}"`);
 
     try {

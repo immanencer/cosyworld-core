@@ -4,7 +4,7 @@ import { ObjectId } from 'mongodb';
 import { db } from '../../database.mjs';
 
 const router = express.Router();
-const TASKS_COLLECTION = 'tasks';
+const REQUESTS_COLLECTION = 'requests';
 const MESSAGES_COLLECTION = 'messages';
 const LOCATIONS_COLLECTION = 'locations';
 
@@ -89,7 +89,7 @@ router.get('/messages/mention', async (req, res) => {
 router.get('/locations', async (req, res) => {
     try {
         const locations = await db.collection(LOCATIONS_COLLECTION).find().toArray();
-        res.status(200).send(locations.map);
+        res.status(200).send(locations);
     } catch (error) {
         handleDatabaseError(res, error, 'fetch locations');
     }
@@ -100,7 +100,7 @@ router.post('/enqueue', async (req, res) => {
     const task = { action, data, status: 'pending', createdAt: new Date() };
 
     try {
-        await db.collection(TASKS_COLLECTION).insertOne(task);
+        await db.collection(REQUESTS_COLLECTION).insertOne(task);
         res.status(200).send({ message: 'Task enqueued' });
     } catch (error) {
         handleDatabaseError(res, error, 'enqueue task');

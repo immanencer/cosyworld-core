@@ -3,7 +3,7 @@ import { Client, GatewayIntentBits, Events } from 'discord.js';
 import { db } from '../database.mjs';
 import chunkText from '../util/chunkText.mjs';
 
-const TASKS_COLLECTION = 'tasks';
+const REQUESTS_COLLECTION = 'requests';
 const MESSAGES_COLLECTION = 'messages';
 const LOCATIONS_COLLECTION = 'locations';
 
@@ -103,7 +103,7 @@ class DiscordService {
     }
 
     async processTasks() {
-        const task = await db.collection(TASKS_COLLECTION).findOneAndUpdate(
+        const task = await db.collection(REQUESTS_COLLECTION).findOneAndUpdate(
             { status: 'pending' },
             { $set: { status: 'processing', startedAt: new Date() } },
             { sort: { createdAt: 1 }, returnDocument: 'after' }
@@ -113,13 +113,13 @@ class DiscordService {
 
         try {
             await this.executeTask(task);
-            await db.collection(TASKS_COLLECTION).updateOne(
+            await db.collection(REQUESTS_COLLECTION).updateOne(
                 { _id: task._id },
                 { $set: { status: 'completed', completedAt: new Date() } }
             );
         } catch (error) {
             console.error('Failed to process task:', error);
-            await db.collection(TASKS_COLLECTION).updateOne(
+            await db.collection(REQUESTS_COLLECTION).updateOne(
                 { _id: task._id },
                 { $set: { status: 'failed', error: error.message, completedAt: new Date() } }
             );

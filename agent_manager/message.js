@@ -32,7 +32,7 @@ export async function processMessagesForAvatar(avatar) {
         if (messages.length === 0) return;
 
         const conversation = buildConversation(avatar, messages, locations);
-        if (shouldRespond(conversation)) await handleResponse(avatar, conversation);
+        if (shouldRespond(conversation)) await handleResponse(avatar, conversation, locations);
 
         updateLastProcessedMessageId(avatar, mentions);
     } catch (error) {
@@ -54,7 +54,7 @@ const findNewLocation = (lastMention, locations) =>
 async function fetchMessages(avatar, locations) {
     const rememberedLocations = new Set([...(avatar.remember || []), avatar.location.channelName]);
     const messagePromises = Array.from(rememberedLocations).map(locationName => {
-        const locationId = locations.find(loc => loc.name === locationName)?.channelId;
+        const locationId = locations.find(loc => loc.channelName === locationName)?.channelId;
         return locationId ? getMessages(locationId) : Promise.resolve([]);
     });
 
