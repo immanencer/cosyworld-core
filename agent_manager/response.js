@@ -3,7 +3,6 @@ import crypto from 'crypto';
 import { ENQUEUE_API } from '../config.js';
 import { postJSON, retry } from './utils.js';
 import { waitForTask } from './ai.js';
-import { getAvatarItems, callTool, getAvailableTools } from './item.js';
 import { updateAvatarOnServer } from './avatar.js';
 
 const MAX_RETRIES = 3;
@@ -41,13 +40,7 @@ export async function handleResponse(avatar, conversation, locations) {
 
         console.log(`🤖 Responding as ${avatar.name} in ${avatar.location.channelName}`);
 
-        const [items, availableTools] = await Promise.all([
-            getAvatarItems(avatar),
-            getAvailableTools()
-        ]);
-
-        const toolResults = await handleTools(avatar, conversation, items, availableTools, locations);
-        const response = await generateResponse(avatar, conversation, items, toolResults, locations);
+        const response = await generateResponse(avatar, conversation);
 
         if (response && response.trim() !== "") {
             await postResponse(avatar, response);
@@ -117,54 +110,11 @@ async function shouldRespond(avatar, conversation, locations) {
     return shouldRespond;
 }
 
-async function handleTools(avatar, conversation, items, availableTools, locations) {
-    const recentConversation = conversation.slice(-5);
-    const toolsPrompt = `
-You have these items:
-
-${items.map(T => T.name).join('\n')}.
-
-You can perform these functions:
-
-${availableTools.join('\n')}.
-
-Respond with the action you want to use, one per line, with relevant parameters.
-If no action is relevant, return NONE.
-`;
-
-    console.log(`🛠️ Tool prompt for ${avatar.name}:\n${toolsPrompt}`);
-
-    const toolsCheck = await waitForTask(
-        { personality: "You are a precise executive function. Respond only with a action or NONE." },
-        [
-            ...recentConversation,
-            { role: 'user', content: toolsPrompt }
-        ]
-    );
-
-    if (!toolsCheck || toolsCheck.trim().toLowerCase() === 'none') {
-        return [];
-    }
-
-    const toolsToCall = toolsCheck.split('\n').filter(tool => tool.trim());
-    return Promise.all(toolsToCall.map(tool => 
-        callTool(tool, avatar, recentConversation, locations).catch(error => {
-            console.error(`Error calling tool ${tool}:`, error);
-            return `Error: ${error.message}`;
-        })
-    ));
-}
-
-async function generateResponse(avatar, conversation, items, toolResults, locations) {
+async function generateResponse(avatar, conversation) {
     const recentConversation = conversation.slice(-25);
-    const responsePrompt = `
-You have the following items: ${JSON.stringify(items)}.
-You have used the following tools: ${JSON.stringify(toolResults)}.
-`;
-
     const response = await waitForTask(avatar, [
         ...recentConversation,
-        { role: 'user', content: avatar.response_style || 'Generate a response.' }
+        { role: 'user', content: avatar.response_style || 'Provide a short response to the above conversation.' }
     ]);
 
     console.log(`🤖 Response from ${avatar.name}:\n${response}`);

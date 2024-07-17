@@ -13,19 +13,9 @@ export const getMentions = (name, since) =>
 
 export async function processMessagesForAvatar(avatar) {
     try {
-        const [locations, mentions] = await Promise.all([
-            getLocations(),
-            getMentions(avatar.name, lastProcessedMessageIdByAvatar.get(avatar.name))
-        ]);
+        const locations = await getLocations();
 
         if (locations.length === 0) throw new Error('No locations found');
-
-        if (mentions.length > 0) {
-            if (shouldMoveAvatar(avatar, mentions[mentions.length - 1])) {
-                const newLocation = findNewLocation(mentions[mentions.length - 1], locations);
-                await updateAvatarLocation(avatar, newLocation);
-            }
-        }
 
         const messages = await fetchMessages(avatar, locations);
 
@@ -34,38 +24,41 @@ export async function processMessagesForAvatar(avatar) {
         const conversation = buildConversation(avatar, messages, locations);
         if (shouldRespond(conversation)) await handleResponse(avatar, conversation, locations);
 
-        updateLastProcessedMessageId(avatar, mentions);
+        updateLastProcessedMessageId(avatar, messages);
     } catch (error) {
         console.error(`Error processing messages for ${avatar.name}:`, error);
     }
 }
 
-const shouldMoveAvatar = (avatar, lastMention) =>
-    avatar.summon === 'true' &&
-    avatar.location.channelId !== lastMention.channelId &&
-    avatar.location.channelId !== lastMention.threadId &&
-    (avatar.owner === 'host' || avatar.owner === lastMention.author);
-
-const findNewLocation = (lastMention, locations) =>
-    locations.find(loc => loc.id === lastMention.threadId) ||
-    locations.find(loc => loc.id === lastMention.channelId || loc.parent === lastMention.channelId) ||
-    locations[0];
-
 async function fetchMessages(avatar, locations) {
-    const rememberedLocations = new Set([...(avatar.remember || []), avatar.location.channelName]);
-    const messagePromises = Array.from(rememberedLocations).map(locationName => {
-        const locationId = locations.find(loc => loc.channelName === locationName)?.channelId;
-        return locationId ? getMessages(locationId) : Promise.resolve([]);
-    });
+    try {
+        const rememberedLocations = new Set([...(avatar.remember || []), avatar.location.channelName]);
+        const lastProcessedId = lastProcessedMessageIdByAvatar.get(avatar.name);
 
-    const allMessages = await Promise.all(messagePromises);
-    return allMessages.flat().sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)).slice(-10); // Fetch the latest few messages
+        const messagePromises = Array.from(rememberedLocations).map(locationName => {
+            const locationId = locations.find(loc => loc.channelName === locationName)?.channelId;
+            return locationId ? getMessages(locationId) : Promise.resolve([]);
+        });
+
+        const allMessages = await Promise.all(messagePromises);
+        const sortedMessages = allMessages.flat().sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+        if (lastProcessedId) {
+            const lastProcessedIndex = sortedMessages.findIndex(message => message._id === lastProcessedId);
+            return sortedMessages.slice(lastProcessedIndex + 1).slice(-10); // Fetch the latest few messages after the last processed message
+        } else {
+            return sortedMessages.slice(-10); // Fetch the latest few messages if no last processed message is found
+        }
+    } catch (error) {
+        console.error(`Error fetching messages for ${avatar.name}:`, error);
+        throw error;
+    }
 }
 
 const buildConversation = (avatar, messages, locations) =>
     messages.map(message => {
         const author = message.author.displayName || message.author.username;
-        const location = locations.find(loc => loc.id === message.channelId)?.name || 'unknown location';
+        const location = locations.find(loc => loc.channelId === message.channelId)?.name || 'unknown location';
         const isBot = message.author.discriminator === "0000";
 
         return author.includes(avatar.name)
@@ -79,8 +72,9 @@ const shouldRespond = (conversation) => {
         conversation[conversation.length - 1]?.role === 'user';
 };
 
-const updateLastProcessedMessageId = (avatar, mentions) => {
-    if (mentions.length > 0) {
-        lastProcessedMessageIdByAvatar.set(avatar.name, mentions[mentions.length - 1]._id);
+const updateLastProcessedMessageId = (avatar, messages) => {
+    if (messages.length > 0) {
+        lastProcessedMessageIdByAvatar.set(avatar.name, messages[messages.length - 1]._id);
     }
 }
+

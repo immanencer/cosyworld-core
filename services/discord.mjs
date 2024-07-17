@@ -45,7 +45,7 @@ class DiscordService {
     async handleMessage(message) {
         if (message.author.bot) return;
 
-        await this.updateLocation(message.channelId, message.channel.name, message.guildId);
+        await this.updateLocation(message.channelId, message.channel.name, message.guildId, message.threadId);
         
         const messageData = {
             message_id: message.id,

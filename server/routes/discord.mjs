@@ -45,7 +45,7 @@ router.get('/messages', async (req, res) => {
 });
 
 router.post('/messages', async (req, res) => {
-    const { id, author, content, createdAt, channelId, guildId } = req.body;
+    const { id, author, content, createdAt, channelId, threadId, guildId } = req.body;
     const message = {
         message_id: id || 'default_id',
         author: {
@@ -57,6 +57,7 @@ router.post('/messages', async (req, res) => {
         content: content || 'default_content',
         createdAt: createdAt || new Date().toISOString(),
         channelId: channelId || 'default_channel_id',
+        threadId: threadId || 'default_thread_id',
         guildId: guildId || 'default_guild_id'
     };
 
