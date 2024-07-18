@@ -22,11 +22,6 @@ app.use('/api/avatars', avatars);
 import statistics from './routes/statistics.mjs';
 app.use('/statistics', statistics);
 
-import news from '../agents/newsbot/router.mjs';
-app.use('/news', news);
-
-
-
 
 // Third-party API routes
 
