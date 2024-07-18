@@ -1,9 +1,7 @@
 import { MESSAGES_API } from "../config.js";
 import { fetchJSON, createURLWithParams } from "./utils.js";
-import { getLocations, updateAvatarLocation } from "./avatar.js";
+import { getLocations } from "./avatar.js";
 import { handleResponse } from "./response.js";
-
-const lastProcessedMessageIdByAvatar = new Map();
 
 export const getMessages = (location) =>
     fetchJSON(createURLWithParams(MESSAGES_API, { location }));
@@ -24,38 +22,46 @@ export async function processMessagesForAvatar(avatar) {
         const conversation = buildConversation(avatar, messages, locations);
         if (shouldRespond(conversation)) await handleResponse(avatar, conversation, locations);
 
-        updateLastProcessedMessageId(avatar, messages);
     } catch (error) {
         console.error(`Error processing messages for ${avatar.name}:`, error);
     }
 }
 
+/**
+ * Fetch the most recent messages from the avatar's current location.
+ * @param {Object} avatar - The avatar object.
+ * @param {Array} locations - The list of all available locations.
+ * @returns {Promise<Array>} The recent messages from the avatar's current location.
+ */
 async function fetchMessages(avatar, locations) {
     try {
-        const rememberedLocations = new Set([...(avatar.remember || []), avatar.location.channelName]);
-        const lastProcessedId = lastProcessedMessageIdByAvatar.get(avatar.name);
+        const currentLocation = avatar.location.channelName;
 
-        const messagePromises = Array.from(rememberedLocations).map(locationName => {
-            const locationId = locations.find(loc => loc.channelName === locationName)?.channelId;
-            return locationId ? getMessages(locationId) : Promise.resolve([]);
-        });
-
-        const allMessages = await Promise.all(messagePromises);
-        const sortedMessages = allMessages.flat().sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-
-        if (lastProcessedId) {
-            const lastProcessedIndex = sortedMessages.findIndex(message => message._id === lastProcessedId);
-            return sortedMessages.slice(lastProcessedIndex + 1).slice(-10); // Fetch the latest few messages after the last processed message
-        } else {
-            return sortedMessages.slice(-10); // Fetch the latest few messages if no last processed message is found
+        // Find the channelId for the avatar's current location
+        const location = locations.find(loc => loc.channelName === currentLocation);
+        if (!location) {
+            throw new Error(`Location ${currentLocation} not found for avatar ${avatar.name}`);
         }
+        const locationId = location.channelId;
+
+        // Fetch messages from the current location
+        const messages = await getMessages(locationId);
+        // Sort messages by creation date and return the most recent ones
+        return messages.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
     } catch (error) {
         console.error(`Error fetching messages for ${avatar.name}:`, error);
         throw error;
     }
 }
 
-const buildConversation = (avatar, messages, locations) =>
+/**
+ * Build the conversation context for the avatar.
+ * @param {Object} avatar - The avatar object.
+ * @param {Array} messages - The list of messages to build the conversation from.
+ * @param {Array} locations - The list of all available locations.
+ * @returns {Array} The formatted conversation context.
+ */
+const buildConversation = (avatar, messages, locations) => 
     messages.map(message => {
         const author = message.author.displayName || message.author.username;
         const location = locations.find(loc => loc.channelId === message.channelId)?.name || 'unknown location';
@@ -66,15 +72,14 @@ const buildConversation = (avatar, messages, locations) =>
             : { bot: isBot, role: 'user', content: `(${location}) ${author}: ${message.content}` };
     });
 
+/**
+ * Determine if the avatar should respond based on the conversation context.
+ * @param {Array} conversation - The conversation context.
+ * @returns {boolean} Whether the avatar should respond.
+ */
 const shouldRespond = (conversation) => {
     const recentMessages = conversation.slice(-5);
     return recentMessages.some(message => !message.bot) &&
         conversation[conversation.length - 1]?.role === 'user';
 };
-
-const updateLastProcessedMessageId = (avatar, messages) => {
-    if (messages.length > 0) {
-        lastProcessedMessageIdByAvatar.set(avatar.name, messages[messages.length - 1]._id);
-    }
-}
 

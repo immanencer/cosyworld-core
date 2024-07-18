@@ -77,7 +77,7 @@ async function shouldRespond(avatar, conversation, locations) {
 
     if (avatar.force) {
         // In force state only respond to human messages
-        return !conversation[conversation.length - 1].isBot;
+        return !conversation[conversation.length - 1].bot;
     }
 
     const haiku = await waitForTask(avatar, [
