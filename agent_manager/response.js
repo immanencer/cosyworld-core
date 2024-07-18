@@ -55,6 +55,7 @@ const hashConversation = (conversation) => {
 };
 
 const isRecentCheck = (avatar, hash) => {
+    avatar.checkedConversations = avatar.checkedConversations || {};
     const entry = avatar.checkedConversations[hash];
     if (!entry) return false;
     const elapsedTime = Date.now() - entry;
