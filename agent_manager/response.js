@@ -1,5 +1,4 @@
 import crypto from 'crypto';
-
 import { ENQUEUE_API } from '../config.js';
 import { postJSON, retry } from './utils.js';
 import { waitForTask } from './ai.js';
@@ -25,13 +24,12 @@ export const postResponse = retry(async (avatar, response) => {
 
 export async function handleResponse(avatar, conversation, locations) {
     try {
-
         if (conversation[conversation.length - 1].content.toLowerCase().trim().startsWith(`(${avatar.location.channelName}) ${avatar.name}:`.toLowerCase())) {
-            console.log(`🤖 Skipping response for ${avatar.name} in ${avatar.location.channelName} because the last message was from the avatar.`)
+            console.log(`🤖 Skipping response for ${avatar.name} in ${avatar.location.channelName} because the last message was from the avatar.`);
             return;
         }
 
-        if (!(await shouldRespond(avatar, conversation, locations))) { 
+        if (!(await shouldRespond(avatar, conversation, locations))) {
             console.log(`🤖 Skipping response for ${avatar.name} in ${avatar.location.channelName}`);
             avatar.next_check = Date.now() + 5 * 60 * 1000; // 5 minutes in milliseconds
             await updateAvatarOnServer(avatar);
@@ -50,35 +48,34 @@ export async function handleResponse(avatar, conversation, locations) {
     }
 }
 
-const checkedConversations = new Map();
-
 const hashConversation = (conversation) => {
     const hash = crypto.createHash('sha256');
     hash.update(JSON.stringify(conversation));
     return hash.digest('hex');
 };
 
-const isRecentCheck = (hash) => {
-    const entry = checkedConversations.get(hash);
+const isRecentCheck = (avatar, hash) => {
+    const entry = avatar.checkedConversations[hash];
     if (!entry) return false;
-    const elapsedTime = Date.now() - entry.timestamp;
+    const elapsedTime = Date.now() - entry;
     return elapsedTime < 5 * 60 * 1000; // 5 minutes in milliseconds
 };
 
-const updateCheckTimestamp = (hash) => {
-    checkedConversations.set(hash, { timestamp: Date.now() });
+const updateCheckTimestamp = async (avatar, hash) => {
+    avatar.checkedConversations[hash] = Date.now();
+    await updateAvatarOnServer(avatar);
 };
 
 async function shouldRespond(avatar, conversation, locations) {
     const recentConversation = conversation.slice(-10);
     const conversationHash = hashConversation(recentConversation);
 
-    if (isRecentCheck(conversationHash)) {
+    if (isRecentCheck(avatar, conversationHash)) {
         return false;
     }
 
     if (avatar.force) {
-        // in force state only respond to human messages
+        // In force state only respond to human messages
         return !conversation[conversation.length - 1].isBot;
     }
 
@@ -105,7 +102,7 @@ async function shouldRespond(avatar, conversation, locations) {
     const shouldRespond = haikuCheck && haikuCheck.toLowerCase().includes('yes');
     console.log(`Haiku check for ${avatar.name}: ${shouldRespond ? 'Passed' : 'Failed'}`);
 
-    updateCheckTimestamp(conversationHash);
+    await updateCheckTimestamp(avatar, conversationHash);
 
     return shouldRespond;
 }
