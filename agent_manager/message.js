@@ -64,7 +64,7 @@ async function fetchMessages(avatar, locations) {
 const buildConversation = (avatar, messages, locations) => 
     messages.map(message => {
         const author = message.author.displayName || message.author.username;
-        const location = locations.find(loc => loc.channelId === message.channelId)?.name || 'unknown location';
+        const location = locations.find(loc => loc.channelId === message.channelId)?.channelName || 'unknown location';
         const isBot = message.author.discriminator === "0000";
 
         return author.includes(avatar.name)
