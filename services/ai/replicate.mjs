@@ -1,7 +1,7 @@
 const model_cache = {};
 
 export default class ReplicateService {
-    constructor(model = 'meta-llama-3-70b-instruct') {
+    constructor(model = 'meta-llama-3.1-8b-instruct') {
         this.model = model;
         this.apiToken = process.env.REPLICATE_API_TOKEN;
     }
@@ -24,7 +24,7 @@ export default class ReplicateService {
             }
         };
 
-        const response = await fetch('https://api.replicate.com/v1/models/meta/meta-llama-3-70b-instruct/predictions', {
+        const response = await fetch('https://api.replicate.com/v1/models/meta/meta-llama-3.1-405b-instruct/predictions', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${this.apiToken}`,

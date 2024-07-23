@@ -22,6 +22,9 @@ class AI {
             case 'replicate/meta-llama-3-70b-instruct':
                 this.service = new ReplicateService('meta-llama-3-70b-instruct');
                 break;
+            case 'replicate/meta-llama-3.1-405b-instruct':
+                this.service = new ReplicateService('meta-llama-3.1-405b-instruct');
+                break;
             default:
                 throw new Error('Invalid model');
 
