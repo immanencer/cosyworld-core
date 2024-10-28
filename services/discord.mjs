@@ -2,6 +2,7 @@
 import { Client, GatewayIntentBits, Events } from 'discord.js';
 import { db } from '../database.mjs';
 import chunkText from '../util/chunkText.mjs';
+import { POLL_INTERVAL } from '../config.js';
 
 const REQUESTS_COLLECTION = 'requests';
 const MESSAGES_COLLECTION = 'messages';
@@ -80,14 +81,7 @@ class DiscordService {
     }
 
     adjustPollingInterval() {
-        const timeSinceLastMessage = Date.now() - this.lastMessageTime;
-        if (timeSinceLastMessage < 60000) { // Less than 1 minute
-            this.pollingInterval = 5000; // 5 seconds
-        } else if (timeSinceLastMessage < 300000) { // Less than 5 minutes
-            this.pollingInterval = 30000; // 30 seconds
-        } else {
-            this.pollingInterval = 60000; // 1 minute
-        }
+        this.pollingInterval = POLL_INTERVAL; // 5 seconds
     }
 
     async startPolling() {
@@ -96,7 +90,6 @@ class DiscordService {
                 await this.processTasks();
             }
             await new Promise(resolve => setTimeout(resolve, this.pollingInterval));
-            this.adjustPollingInterval();
         }
     }
 

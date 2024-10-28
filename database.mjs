@@ -2,7 +2,7 @@ import { MongoClient } from 'mongodb';
 
 // MongoDB URI and Database Name
 const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017';
-const dbName = 'cosyworld';
+const dbName = 'moonstone';
 
 // Create a new MongoClient
 const client = new MongoClient(mongoURI);
@@ -26,4 +26,4 @@ async function connectToMongoDB() {
 // Call this function at the start of your application
 await connectToMongoDB();
 
-export { db };
+export { db, client };

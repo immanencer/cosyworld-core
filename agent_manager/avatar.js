@@ -4,6 +4,7 @@ import { fetchJSON } from './utils.js';
 let lastCacheTime = null;
 let cachedLocations = null;
 
+
 export const getLocations = async () => {
 
     if (lastCacheTime && Date.now() - lastCacheTime < 5000) {
@@ -23,7 +24,6 @@ export const initializeAvatars = async () => {
     ]);
 
     return allAvatars
-        .filter(avatar => avatar.owner === 'host')
         .map(avatar => initializeAvatar(avatar, locations));
 };
 

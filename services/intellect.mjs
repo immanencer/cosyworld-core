@@ -24,7 +24,7 @@ async function process_next_task() {
     logged = false;
     
     // process the task
-    const ai = new AI(task.model || 'ollama/llama3');
+    const ai = new AI(task.model);
 
 
     let response;

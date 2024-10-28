@@ -43,6 +43,16 @@
             "name": "listener",
             "program": "./services/listener.mjs",
             "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "name": "asset report",
+            "program": "./services/nft-lister.mjs",
+            "envFile": "${workspaceFolder}/.env"
         }
     ]
 }
