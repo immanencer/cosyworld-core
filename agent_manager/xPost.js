@@ -1,16 +1,16 @@
 // processPostsForAvatar.js
+import { ObjectId } from 'mongodb';
 import { db, client } from '../database.mjs'; // Ensure the path is correct based on your project structure
 import { waitForTask } from './ai.js';
 import { updateCharacterContext } from './memory.js';
 import fs from 'fs';
 
 const DATABASE_NAME = 'moonstone'; // Database name
-const COLLECTION_NAME = 'raticat'; // Collection name
 
 /**
  * Constants for rate limiting
  */
-const FOUR_HOURS = 4 * 60 * 60 * 1000; // in milliseconds
+const FOUR_HOURS = 1 * 60 * 60 * 1000; // in milliseconds
 
 /**
  * Enqueues a post task to the 'tasks' collection for XModule to process.
@@ -22,6 +22,19 @@ async function enqueuePostTask(avatar, message) {
         await client.connect();
         const db = client.db(DATABASE_NAME);
         const tasksCollection = db.collection('x_tasks');
+        const avatarCollection = db.collection('avatars');
+
+        const _avatar = await avatarCollection.findOne({ name: avatar.name });
+        if (!_avatar) {
+            console.error(`Avatar ${avatar.name} not found in the database.`);
+            return;
+        }
+
+        if (_avatar.last_posted_at && (Date.now() - Date.parse(_avatar.last_posted_at)) < FOUR_HOURS) {
+            console.log(`⚠️ Rate limiting post for ${avatar.name}.`);
+            return;
+        }
+
         const task = {
             message,
             status: 'pending',
@@ -31,7 +44,7 @@ async function enqueuePostTask(avatar, message) {
 
         await tasksCollection.insertOne(task);
         avatar.last_posted_at = new Date();
-        await db.collection(COLLECTION_NAME).updateOne({ _id: avatar._id }, { $set: { last_posted_at: avatar.last_posted_at } });
+        await avatarCollection.updateOne({ name: avatar.name }, { $set: { last_posted_at: avatar.last_posted_at } });
         console.log(`✅ Enqueued post task for ${avatar.name}: "${message}"`);
     } catch (error) {
         console.error(`Error enqueuing post task for ${avatar.name}:`, error);
@@ -121,7 +134,7 @@ async function generatePostContent(avatar) {
       }
 
       // Define the prompt including dreams, memories, and journals
-      const prompt = `As ${avatar.name}, create an engaging post for X. It should be SHORT (less than 280 characters). Use the following context if it helps:\n` +
+      const prompt = `As ${avatar.name}, create an engaging post for X. It should be SHORT (less than 280 characters). Feel free to choose one NFT or Coin you hold to promote:\n` +
                      `${accountBalance ? `Balance: ${accountBalance}\n`: ''}` +
                      `Dream: ${character.dream}\n` +
                      `Memory: ${character.memory}\n` +

@@ -10,7 +10,7 @@ import { postJSON, fetchJSON } from './utils.js';
 export async function createAiTask(system_prompt, messages) {
     const task = {
         action: 'ai',
-        model: 'ollama/llama3.2',
+        model: 'meta/meta-llama-3.1-405b-instruct',
         system_prompt,
         messages
     };

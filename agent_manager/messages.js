@@ -1,29 +1,53 @@
 import { MESSAGES_API } from "../config.js";
-import { fetchJSON, createURLWithParams } from "./utils.js";
+import { fetchJSON, createURLWithParams, retry } from "./utils.js";
 import { getLocations } from "./avatar.js";
 import { handleResponse } from "./response.js";
+import { getDb, connectPromise } from "../database.mjs";
 
-export const getMessages = (location) =>
-    fetchJSON(createURLWithParams(MESSAGES_API, { location }));
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000;
 
-export const getMentions = (name, since) =>
-    fetchJSON(createURLWithParams(`${MESSAGES_API}/mention`, { name, since }));
+async function getCollection(name) {
+    const db = await getDb();
+    return db.collection(name);
+}
+
+export const getMessages = retry(
+    (location) => fetchJSON(createURLWithParams(MESSAGES_API, { location })),
+    MAX_RETRIES,
+    RETRY_DELAY
+);
+
+export const getMentions = retry(
+    (name, since) => fetchJSON(createURLWithParams(`${MESSAGES_API}/mention`, { name, since })),
+    MAX_RETRIES,
+    RETRY_DELAY
+);
 
 export async function processMessagesForAvatar(avatar) {
+    if (!avatar?.name) {
+        console.error('Invalid avatar object received');
+        return;
+    }
+
     try {
+        await connectPromise;
         const locations = await getLocations();
 
-        if (locations.length === 0) throw new Error('No locations found');
+        if (!Array.isArray(locations) || locations.length === 0) {
+            throw new Error('No valid locations found');
+        }
 
         const messages = await fetchMessages(avatar, locations);
+        if (!messages?.length) return;
 
-        if (messages.length === 0) return;
-
-        const conversation = buildConversation(avatar, messages, locations);
-        if (shouldRespond(conversation)) await handleResponse(avatar, conversation, locations);
-
+        const conversation = await buildConversation(avatar, messages, locations);
+        if (conversation && shouldRespond(conversation)) {
+            await handleResponse(avatar, conversation, locations);
+        }
     } catch (error) {
         console.error(`Error processing messages for ${avatar.name}:`, error);
+        // Implement monitoring/alerting here if needed
     }
 }
 
@@ -61,16 +85,52 @@ async function fetchMessages(avatar, locations) {
  * @param {Array} locations - The list of all available locations.
  * @returns {Array} The formatted conversation context.
  */
-const buildConversation = (avatar, messages, locations) => 
-    messages.map(message => {
-        const author = message.author.displayName || message.author.username;
-        const location = locations.find(loc => loc.channelId === message.channelId)?.channelName || 'unknown location';
-        const isBot = message.author.discriminator === "0000";
+const buildConversation = async (avatar, messages, locations) => {
+    try {
+        const characters = await getCollection('characters');
+        const character = await characters.findOne({ name: avatar.name });
+        
+        if (!character) {
+            throw new Error(`Character not found: ${avatar.name}`);
+        }
 
-        return author.includes(avatar.name)
-            ? { author, location, bot: isBot, role: 'assistant', content: `${message.content}` }
-            : { author, location, bot: isBot, role: 'user', content: `${message.content}` };
-    });
+        let assets = '';
+        if (character.wallet) {
+            try {
+                assets = fs.readFileSync(`../nft_images/${character.wallet}_report.md`, 'utf8');
+            } catch (error) {
+                console.warn(`Failed to read assets for ${avatar.name}:`, error);
+            }
+        }
+
+        return [
+            { role: 'assistant', content: `
+                Recent Dream
+                ${character.dream}
+                ${assets ? `\nRecent Asset Report\n${assets}` : ''}
+
+                Recent Journal
+                ${character.journal}
+                
+                Recent Memory
+                ${character.memory}
+            ` },
+            ...messages.map(message => {
+                const author = message.author.displayName || message.author.username;
+                const location = locations.find(loc => loc.channelId === message.channelId)?.channelName || 'unknown location';
+                const isBot = message.author.discriminator === "0000";
+
+                return author.includes(avatar.name)
+                    ? { author, location, bot: isBot, role: 'assistant', content: `${message.content}` }
+                    : { author, location, bot: isBot, role: 'user', content: `${message.content}` };
+            }),
+            { role: 'user', content: 'You are in a discord channel, respond to the recent messages shown above.' }
+        ];
+    } catch (error) {
+        console.error(`Error building conversation for ${avatar.name}:`, error);
+        throw error;
+    }
+};
 
 /**
  * Determine if the avatar should respond based on the conversation context.

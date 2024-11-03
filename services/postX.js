@@ -115,6 +115,11 @@ export async function postX(params, accountId = '', imageBuffer = null) {
                 attempt++;
                 console.error(`🌳 Error posting tweet (Attempt ${attempt}/${maxRetries}):`, error);
 
+                if (error.status === 429) {
+                    console.log('🌳 Rate limited. Exiting...');
+                    break;
+                }
+
                 if (attempt < maxRetries) {
                     console.log(`🌳 Retrying in ${attempt * 2} seconds...`);
                     await delay(attempt * 2000); // Exponential backoff

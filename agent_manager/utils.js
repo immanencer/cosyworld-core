@@ -133,3 +133,30 @@ export function createURLWithParams(baseURL, params = {}) {
     });
     return url.toString();
 }
+
+/**
+ * Fetches data from a URL with a timeout.
+ * @param {string} url - The URL to fetch from.
+ * @param {Object} [options={}] - Fetch options.
+ * @param {number} [timeout=5000] - Timeout in milliseconds.
+ * @returns {Promise<Object>} The parsed JSON data.
+ */
+export const fetchWithTimeout = async (url, options = {}, timeout = 5000) => {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeout);
+    
+    try {
+        const response = await fetch(url, {
+            ...options,
+            signal: controller.signal
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        return await response.json();
+    } finally {
+        clearTimeout(id);
+    }
+};

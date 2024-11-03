@@ -18,7 +18,7 @@ router.post('/tasks', async (req, res) => {
     }
     
     const newTask = {
-        model: 'ollama/llama3',
+        model: 'meta/meta-llama-3.1-405b-instruct',
         system_prompt,
         messages,
         status: 'pending',

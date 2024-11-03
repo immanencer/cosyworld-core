@@ -3,6 +3,7 @@ import { processMessagesForAvatar } from './messages.js';
 import { processPostsForAvatar } from './xPost.js';
 import { updateAllCharacters } from './memory.js';
 import './memory.js';
+import '../database.mjs';
 
 import { POLL_INTERVAL } from '../config.js';
 

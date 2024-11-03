@@ -75,6 +75,10 @@ async function shouldRespond(avatar, conversation, locations) {
         return false;
     }
 
+    if (recentConversation[recentConversation.length - 2].author === avatar.name) {
+        return false;
+    }
+
     if (avatar.force) {
         // In force state only respond to human messages
         return !conversation[conversation.length - 1].bot;
